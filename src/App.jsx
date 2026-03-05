@@ -18,11 +18,74 @@ const TrashIcon = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="no
 const SaveIcon = () => <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>;
 const PenIcon = () => <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>;
 const LinkIcon = () => <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>;
+const LoginIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>;
+const LogoutIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>;
 
 function initPosts() {
   try { const r = localStorage.getItem("nb_posts"); return r ? JSON.parse(r) : SAMPLE; } catch { return SAMPLE; }
 }
 function savePosts(p) { try { localStorage.setItem("nb_posts", JSON.stringify(p)); } catch {} }
+function initAuth() {
+  try { return localStorage.getItem("nb_auth") === "true"; } catch { return false; }
+}
+
+function LoginModal({ onLogin, onClose }) {
+  const [pw, setPw] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const attempt = async () => {
+    if (!pw.trim()) return;
+    setLoading(true);
+    setError("");
+    try {
+      const res = await fetch("/api/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password: pw }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        onLogin(data.token);
+      } else {
+        setError("Incorrect password");
+        setPw("");
+      }
+    } catch {
+      setError("Connection error, try again");
+    }
+    setLoading(false);
+  };
+
+  return (
+    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.5)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1000}}>
+      <div style={{background:"#fff",borderRadius:18,padding:"44px 48px",width:380,boxShadow:"0 24px 64px rgba(0,0,0,.2)"}}>
+        <div style={{textAlign:"center",marginBottom:32}}>
+          <div style={{width:52,height:52,background:"#111",borderRadius:14,display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 18px"}}>
+            <LoginIcon/>
+          </div>
+          <h2 style={{fontSize:21,fontWeight:700,margin:"0 0 6px",color:"#111"}}>Admin Login</h2>
+          <p style={{fontSize:14,color:"#999",margin:0}}>Private articles are password protected</p>
+        </div>
+        <input type="password" value={pw} onChange={e=>setPw(e.target.value)}
+          onKeyDown={e=>e.key==="Enter"&&attempt()}
+          placeholder="Enter password" autoFocus
+          style={{width:"100%",boxSizing:"border-box",padding:"12px 14px",border:`1px solid ${error?"#e53e3e":"#e0e0e0"}`,
+            borderRadius:9,fontSize:15,marginBottom:error?6:14,outline:"none"}}/>
+        {error && <p style={{color:"#e53e3e",fontSize:13,margin:"0 0 12px"}}>{error}</p>}
+        <button onClick={attempt} disabled={loading}
+          style={{width:"100%",padding:"12px",background:"#111",color:"#fff",border:"none",borderRadius:9,
+            fontSize:15,fontWeight:600,cursor:loading?"not-allowed":"pointer",opacity:loading?0.7:1,marginBottom:10}}>
+          {loading ? "Checking…" : "Login"}
+        </button>
+        <button onClick={onClose}
+          style={{width:"100%",padding:"11px",background:"none",color:"#999",border:"1px solid #eee",borderRadius:9,fontSize:14,cursor:"pointer"}}>
+          Cancel
+        </button>
+      </div>
+    </div>
+  );
+}
 
 function RichEditor({ value, onChange }) {
   const ref = useRef(null);
@@ -53,13 +116,14 @@ function RichEditor({ value, onChange }) {
       <div ref={ref} contentEditable suppressContentEditableWarning
         onInput={e=>onChange(e.currentTarget.innerHTML)}
         dangerouslySetInnerHTML={{__html:value}}
-        style={{minHeight:300,padding:"22px 26px",fontSize:17,lineHeight:1.8,color:"#1a1a1a",outline:"none",fontFamily:"Georgia,serif"}}/>
+        style={{minHeight:"calc(100vh - 340px)",padding:"28px 32px",fontSize:17,lineHeight:1.8,color:"#1a1a1a",outline:"none",fontFamily:"Georgia,serif"}}/>
     </div>
   );
 }
 
 function SourceMgr({ sources, onChange }) {
-  const [lbl,setLbl]=useState(""); const [url,setUrl]=useState("");
+  const [lbl,setLbl]=useState("");
+  const [url,setUrl]=useState("");
   return (
     <div>
       <div style={{display:"flex",gap:8,marginBottom:8,flexWrap:"wrap"}}>
@@ -81,7 +145,7 @@ function SourceMgr({ sources, onChange }) {
   );
 }
 
-function Card({ post, onClick, onDelete }) {
+function Card({ post, onClick, onDelete, isAdmin }) {
   const color = TOPIC_COLORS[post.topic]||"#555";
   return (
     <div onClick={onClick}
@@ -92,11 +156,11 @@ function Card({ post, onClick, onDelete }) {
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:12}}>
         <span style={{fontSize:10,fontWeight:700,letterSpacing:1.2,textTransform:"uppercase",color,borderLeft:`3px solid ${color}`,paddingLeft:9}}>{post.topic}</span>
         <div style={{display:"flex",gap:7,alignItems:"center"}}>
-          <span style={{display:"flex",alignItems:"center",gap:4,fontSize:11,fontWeight:600,padding:"3px 9px",borderRadius:20,
+          {isAdmin&&<span style={{display:"flex",alignItems:"center",gap:4,fontSize:11,fontWeight:600,padding:"3px 9px",borderRadius:20,
             color:post.status==="public"?"#1a6b3c":"#888",background:post.status==="public"?"#e6f4ed":"#f2f2f2"}}>
-            {post.status==="public"?<GlobeIcon/>:<LockIcon/>}{post.status==="public"?"Public":"Private"}</span>
-          <button onClick={e=>{e.stopPropagation();if(window.confirm("Delete this article?"))onDelete(post.id);}}
-            style={{background:"none",border:"none",cursor:"pointer",color:"#ddd",padding:2}}><TrashIcon/></button>
+            {post.status==="public"?<GlobeIcon/>:<LockIcon/>}{post.status==="public"?"Public":"Private"}</span>}
+          {isAdmin&&<button onClick={e=>{e.stopPropagation();if(window.confirm("Delete this article?"))onDelete(post.id);}}
+            style={{background:"none",border:"none",cursor:"pointer",color:"#ddd",padding:2}}><TrashIcon/></button>}
         </div>
       </div>
       <h2 style={{fontSize:19,fontWeight:700,lineHeight:1.3,margin:"0 0 9px",color:"#111",fontFamily:"Georgia,serif"}}>{post.title}</h2>
@@ -125,7 +189,7 @@ function Editor({ post, onSave, onBack }) {
   };
 
   return (
-    <div style={{maxWidth:820,margin:"0 auto",padding:"32px 0 100px"}}>
+    <div style={{width:"100%",boxSizing:"border-box",padding:"32px 48px 100px"}}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:32}}>
         <button onClick={onBack} style={{display:"flex",alignItems:"center",gap:6,background:"none",border:"1px solid #e0e0e0",borderRadius:8,padding:"8px 16px",cursor:"pointer",fontSize:13,color:"#555"}}>
           <BackIcon/> Back</button>
@@ -150,7 +214,7 @@ function Editor({ post, onSave, onBack }) {
         </div>
       </div>
       <input value={title} onChange={e=>setTitle(e.target.value)} placeholder="Article title…"
-        style={{width:"100%",boxSizing:"border-box",fontSize:30,fontWeight:700,fontFamily:"Georgia,serif",border:"none",
+        style={{width:"100%",boxSizing:"border-box",fontSize:32,fontWeight:700,fontFamily:"Georgia,serif",border:"none",
           borderBottom:"2px solid #eee",padding:"6px 0",marginBottom:14,outline:"none",color:"#111",background:"transparent"}}/>
       <textarea value={summary} onChange={e=>setSummary(e.target.value)} placeholder="One-sentence summary / lede…"
         rows={2} style={{width:"100%",boxSizing:"border-box",fontSize:15,fontFamily:"Georgia,serif",fontStyle:"italic",color:"#666",
@@ -167,23 +231,23 @@ function Editor({ post, onSave, onBack }) {
   );
 }
 
-function Reader({ post, onEdit, onBack }) {
+function Reader({ post, onEdit, onBack, isAdmin }) {
   const color = TOPIC_COLORS[post.topic]||"#555";
   return (
-    <div style={{maxWidth:700,margin:"0 auto",padding:"32px 0 100px"}}>
+    <div style={{maxWidth:740,margin:"0 auto",padding:"32px 0 100px"}}>
       <div style={{display:"flex",justifyContent:"space-between",marginBottom:40}}>
         <button onClick={onBack} style={{display:"flex",alignItems:"center",gap:6,background:"none",border:"1px solid #e0e0e0",borderRadius:8,padding:"8px 16px",cursor:"pointer",fontSize:13,color:"#555"}}>
           <BackIcon/> Back</button>
-        <button onClick={onEdit} style={{display:"flex",alignItems:"center",gap:6,background:"none",border:"1px solid #333",borderRadius:8,padding:"8px 16px",cursor:"pointer",fontSize:13,color:"#333",fontWeight:600}}>
-          <PenIcon/> Edit</button>
+        {isAdmin&&<button onClick={onEdit} style={{display:"flex",alignItems:"center",gap:6,background:"none",border:"1px solid #333",borderRadius:8,padding:"8px 16px",cursor:"pointer",fontSize:13,color:"#333",fontWeight:600}}>
+          <PenIcon/> Edit</button>}
       </div>
       <div style={{display:"flex",gap:12,alignItems:"center",marginBottom:14}}>
         <span style={{fontSize:10,fontWeight:700,letterSpacing:1.2,textTransform:"uppercase",color,borderLeft:`3px solid ${color}`,paddingLeft:9}}>{post.topic}</span>
-        <span style={{display:"flex",alignItems:"center",gap:4,fontSize:11,fontWeight:600,padding:"3px 9px",borderRadius:20,
+        {isAdmin&&<span style={{display:"flex",alignItems:"center",gap:4,fontSize:11,fontWeight:600,padding:"3px 9px",borderRadius:20,
           color:post.status==="public"?"#1a6b3c":"#888",background:post.status==="public"?"#e6f4ed":"#f2f2f2"}}>
-          {post.status==="public"?<GlobeIcon/>:<LockIcon/>}{post.status==="public"?"Public":"Private"}</span>
+          {post.status==="public"?<GlobeIcon/>:<LockIcon/>}{post.status==="public"?"Public":"Private"}</span>}
       </div>
-      <h1 style={{fontSize:38,fontWeight:700,lineHeight:1.2,margin:"0 0 16px",color:"#111",fontFamily:"Georgia,serif"}}>{post.title}</h1>
+      <h1 style={{fontSize:40,fontWeight:700,lineHeight:1.2,margin:"0 0 16px",color:"#111",fontFamily:"Georgia,serif"}}>{post.title}</h1>
       <p style={{fontSize:18,color:"#666",fontStyle:"italic",lineHeight:1.65,marginBottom:14,fontFamily:"Georgia,serif"}}>{post.summary}</p>
       <div style={{fontSize:13,color:"#bbb",marginBottom:40,paddingBottom:22,borderBottom:"1px solid #eee"}}>
         {fmt(post.createdAt)}{post.updatedAt!==post.createdAt&&` · Updated ${fmt(post.updatedAt)}`}
@@ -212,37 +276,79 @@ export default function App() {
   const [filter,setFilter]=useState("All");
   const [filterStatus,setFilterStatus]=useState("All");
   const [search,setSearch]=useState("");
+  const [isAdmin,setIsAdmin]=useState(initAuth);
+  const [showLogin,setShowLogin]=useState(false);
 
-  const saveAll = (updated) => { setPosts(updated); savePosts(updated); };
-  const handleSave = (p) => saveAll(posts.find(x=>x.id===p.id)?posts.map(x=>x.id===p.id?p:x):[p,...posts]);
-  const handleDelete = (id) => saveAll(posts.filter(p=>p.id!==id));
-  const activePost = posts.find(p=>p.id===activeId)||{};
+  const saveAll=(updated)=>{setPosts(updated);savePosts(updated);};
+  const handleSave=(p)=>saveAll(posts.find(x=>x.id===p.id)?posts.map(x=>x.id===p.id?p:x):[p,...posts]);
+  const handleDelete=(id)=>saveAll(posts.filter(p=>p.id!==id));
+  const activePost=posts.find(p=>p.id===activeId)||{};
 
-  const visible = posts.filter(p=>{
+  const handleLogin=(token)=>{
+    setIsAdmin(true);
+    try{localStorage.setItem("nb_auth","true");localStorage.setItem("nb_token",token);}catch{}
+    setShowLogin(false);
+  };
+  const handleLogout=()=>{
+    setIsAdmin(false);
+    try{localStorage.removeItem("nb_auth");localStorage.removeItem("nb_token");}catch{}
+  };
+
+  const visiblePosts=posts.filter(p=>isAdmin?true:p.status==="public");
+  const visible=visiblePosts.filter(p=>{
     if(filter!=="All"&&p.topic!==filter)return false;
-    if(filterStatus!=="All"&&p.status!==filterStatus)return false;
+    if(isAdmin&&filterStatus!=="All"&&p.status!==filterStatus)return false;
     if(search&&!p.title.toLowerCase().includes(search.toLowerCase())&&!p.summary?.toLowerCase().includes(search.toLowerCase()))return false;
     return true;
   });
 
-  if(view==="read") return <div style={{minHeight:"100vh",background:"#faf9f7",padding:"36px 28px"}}><Reader post={activePost} onBack={()=>setView("home")} onEdit={()=>setView("edit")}/></div>;
-  if(view==="edit"||view==="new") return <div style={{minHeight:"100vh",background:"#faf9f7",padding:"36px 28px"}}><Editor post={view==="new"?{}:activePost} onSave={p=>{handleSave(p);setActiveId(p.id);setView("read");}} onBack={()=>setView(activeId?"read":"home")}/></div>;
-
   const pub=posts.filter(p=>p.status==="public").length;
+
+  const Header = () => (
+    <header style={{background:"#fff",borderBottom:"1px solid #ebebeb",padding:"0 40px",position:"sticky",top:0,zIndex:100}}>
+      <div style={{maxWidth:1400,margin:"0 auto",display:"flex",alignItems:"center",justifyContent:"space-between",height:66}}>
+        <div style={{display:"flex",alignItems:"baseline",gap:14}}>
+          <span onClick={()=>setView("home")} style={{fontSize:22,fontWeight:800,fontFamily:"Georgia,serif",color:"#111",letterSpacing:"-0.5px",cursor:"pointer"}}>The Notebook</span>
+          <span style={{fontSize:12,color:"#bbb"}}>{isAdmin?`${pub} public · ${posts.length-pub} private`:`${pub} articles`}</span>
+        </div>
+        <div style={{display:"flex",gap:10,alignItems:"center"}}>
+          {isAdmin&&<>
+            <span style={{fontSize:12,color:"#aaa",background:"#f5f5f5",padding:"4px 10px",borderRadius:20,fontWeight:600}}>Admin</span>
+            <button onClick={()=>{setActiveId(null);setView("new");}}
+              style={{display:"flex",alignItems:"center",gap:7,background:"#111",color:"#fff",border:"none",borderRadius:9,padding:"9px 20px",cursor:"pointer",fontSize:14,fontWeight:600}}>
+              <PlusIcon/> New Article</button>
+          </>}
+          <button onClick={isAdmin?handleLogout:()=>setShowLogin(true)}
+            title={isAdmin?"Logout":"Admin Login"}
+            style={{display:"flex",alignItems:"center",gap:6,background:"none",border:"1px solid #e0e0e0",borderRadius:8,
+              padding:"8px 12px",cursor:"pointer",color:isAdmin?"#999":"#555",fontSize:13}}>
+            {isAdmin?<><LogoutIcon/> Logout</>:<><LoginIcon/> Login</>}
+          </button>
+        </div>
+      </div>
+    </header>
+  );
+
+  if(view==="read") return (
+    <div style={{minHeight:"100vh",background:"#faf9f7"}}>
+      {showLogin&&<LoginModal onLogin={handleLogin} onClose={()=>setShowLogin(false)}/>}
+      <Header/>
+      <div style={{padding:"36px 48px"}}><Reader post={activePost} onBack={()=>setView("home")} onEdit={()=>setView("edit")} isAdmin={isAdmin}/></div>
+    </div>
+  );
+
+  if(view==="edit"||view==="new") return (
+    <div style={{minHeight:"100vh",background:"#faf9f7"}}>
+      <Header/>
+      <Editor post={view==="new"?{}:activePost} onSave={p=>{handleSave(p);setActiveId(p.id);setView("read");}} onBack={()=>setView(activeId?"read":"home")}/>
+    </div>
+  );
+
   return (
     <div style={{minHeight:"100vh",background:"#faf9f7",fontFamily:"system-ui,sans-serif"}}>
-      <header style={{background:"#fff",borderBottom:"1px solid #ebebeb",padding:"0 40px"}}>
-        <div style={{maxWidth:1100,margin:"0 auto",display:"flex",alignItems:"center",justifyContent:"space-between",height:66}}>
-          <div style={{display:"flex",alignItems:"baseline",gap:14}}>
-            <span style={{fontSize:22,fontWeight:800,fontFamily:"Georgia,serif",color:"#111",letterSpacing:"-0.5px"}}>The Notebook</span>
-            <span style={{fontSize:12,color:"#bbb"}}>{pub} public · {posts.length-pub} private</span>
-          </div>
-          <button onClick={()=>{setActiveId(null);setView("new");}}
-            style={{display:"flex",alignItems:"center",gap:7,background:"#111",color:"#fff",border:"none",borderRadius:9,padding:"9px 20px",cursor:"pointer",fontSize:14,fontWeight:600}}>
-            <PlusIcon/> New Article</button>
-        </div>
-      </header>
-      <main style={{maxWidth:1100,margin:"0 auto",padding:"34px 40px"}}>
+      {showLogin&&<LoginModal onLogin={handleLogin} onClose={()=>setShowLogin(false)}/>}
+      <Header/>
+      <main style={{maxWidth:1400,margin:"0 auto",padding:"34px 40px"}}>
         <div style={{display:"flex",gap:10,marginBottom:28,flexWrap:"wrap",alignItems:"center"}}>
           <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search articles…"
             style={{padding:"8px 14px",border:"1px solid #ddd",borderRadius:8,fontSize:13,flex:"0 0 220px"}}/>
@@ -255,24 +361,24 @@ export default function App() {
                   color:filter===t?"#fff":(TOPIC_COLORS[t]||"#555")}}>{t}</button>
             ))}
           </div>
-          <div style={{display:"flex",border:"1px solid #ddd",borderRadius:8,overflow:"hidden"}}>
+          {isAdmin&&<div style={{display:"flex",border:"1px solid #ddd",borderRadius:8,overflow:"hidden"}}>
             {["All","public","private"].map(s=>(
               <button key={s} onClick={()=>setFilterStatus(s)}
                 style={{padding:"7px 13px",border:"none",cursor:"pointer",fontSize:12,fontWeight:600,
                   background:filterStatus===s?"#111":"#fff",color:filterStatus===s?"#fff":"#666"}}>
                 {s==="All"?"All":s==="public"?"Public":"Private"}</button>
             ))}
-          </div>
+          </div>}
         </div>
         {visible.length===0?(
-          <div style={{textAlign:"center",padding:"90px 0",color:"#ccc"}}>
+          <div style={{textAlign:"center",padding:"90px 0"}}>
             <div style={{fontSize:44,marginBottom:14}}>✍️</div>
             <div style={{fontSize:17,fontWeight:600,color:"#aaa",marginBottom:6}}>No articles yet</div>
-            <div style={{fontSize:14}}>Hit "New Article" to start writing.</div>
+            <div style={{fontSize:14,color:"#ccc"}}>Hit "New Article" to start writing.</div>
           </div>
         ):(
           <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(340px,1fr))",gap:20}}>
-            {visible.map(p=><Card key={p.id} post={p} onClick={()=>{setActiveId(p.id);setView("read");}} onDelete={handleDelete}/>)}
+            {visible.map(p=><Card key={p.id} post={p} onClick={()=>{setActiveId(p.id);setView("read");}} onDelete={handleDelete} isAdmin={isAdmin}/>)}
           </div>
         )}
       </main>
