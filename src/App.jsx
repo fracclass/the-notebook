@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 
-const TOPICS = ["Markets","Technology","Geopolitics","Energy","Consumer Trends","Macro","Health","Climate","Other"];
-const TOPIC_COLORS = {"Markets":"#1a6b3c","Technology":"#1a3a6b","Geopolitics":"#6b1a1a","Energy":"#6b4c1a","Consumer Trends":"#4c1a6b","Macro":"#1a5f6b","Health":"#6b1a4c","Climate":"#2d6b1a","Other":"#555"};
+const TOPICS = ["Markets","Technology","Energy","Consumer Trends","Macro","Climate","Other"];
+const TOPIC_COLORS = {"Markets":"#1a6b3c","Technology":"#1a3a6b","Energy":"#6b4c1a","Consumer Trends":"#4c1a6b","Macro":"#1a5f6b","Climate":"#2d6b1a","Other":"#555"};
 const now = () => new Date().toISOString();
 const fmt = (iso) => new Date(iso).toLocaleDateString("en-US",{year:"numeric",month:"long",day:"numeric"});
 
@@ -370,7 +370,7 @@ export default function App() {
         </div>
         <div style={{display:"flex",gap:10,alignItems:"center"}}>
           {isAdmin&&<>
-            <span style={{fontSize:12,color:"#aaa",background:"#f5f5f5",padding:"4px 10px",borderRadius:20,fontWeight:600}}>Admin</span>
+            <span style={{fontSize:12,color:"#aaa",background:"#f5f5f5",padding:"4px 10px",borderRadius:20,fontWeight:600}}>Franz-Frederick Acclassato</span>
             <button onClick={()=>{setActiveId(null);setView("new");}}
               style={{display:"flex",alignItems:"center",gap:7,background:"#111",color:"#fff",border:"none",borderRadius:9,padding:"9px 20px",cursor:"pointer",fontSize:14,fontWeight:600}}>
               <PlusIcon/> New Article</button>
