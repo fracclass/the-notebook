@@ -128,7 +128,7 @@ function RichEditor({ value, onChange }) {
       <div ref={ref} contentEditable suppressContentEditableWarning
         onInput={e=>onChange(e.currentTarget.innerHTML)}
         dangerouslySetInnerHTML={{__html:value}}
-        style={{minHeight:"calc(100vh - 340px)",padding:"28px 32px",fontSize:17,lineHeight:1.8,color:"#1a1a1a",outline:"none",fontFamily:"Georgia,serif"}}/>
+        style={{minHeight:"calc(100vh - 340px)",padding:"28px 32px",fontSize:17,lineHeight:1.8,color:"#1a1a1a",outline:"none",fontFamily:"Georgia,serif",direction:"ltr",textAlign:"left",unicodeBidi:"plaintext",wordBreak:"break-word",whiteSpace:"pre-wrap"}}/>
     </div>
   );
 }
