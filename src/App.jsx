@@ -430,7 +430,6 @@ export default function App() {
           <div style={{textAlign:"center",padding:"90px 0"}}>
             <div style={{fontSize:44,marginBottom:14}}>✍️</div>
             <div style={{fontSize:17,fontWeight:600,color:"#aaa",marginBottom:6}}>No articles yet</div>
-            <div style={{fontSize:14,color:"#ccc"}}>Hit "New Article" to start writing.</div>
           </div>
         ):(
           <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(340px,1fr))",gap:20}}>
