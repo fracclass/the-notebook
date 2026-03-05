@@ -20,6 +20,7 @@ const PenIcon = () => <svg width="15" height="15" viewBox="0 0 24 24" fill="none
 const LinkIcon = () => <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>;
 const LoginIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>;
 const LogoutIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>;
+const ImageIcon = () => <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>;
 
 function initPosts() {
   try { const r = localStorage.getItem("nb_posts"); return r ? JSON.parse(r) : SAMPLE; } catch { return SAMPLE; }
@@ -36,8 +37,7 @@ function LoginModal({ onLogin, onClose }) {
 
   const attempt = async () => {
     if (!pw.trim()) return;
-    setLoading(true);
-    setError("");
+    setLoading(true); setError("");
     try {
       const res = await fetch("/api/login", {
         method: "POST",
@@ -45,15 +45,9 @@ function LoginModal({ onLogin, onClose }) {
         body: JSON.stringify({ password: pw }),
       });
       const data = await res.json();
-      if (data.success) {
-        onLogin(data.token);
-      } else {
-        setError("Incorrect password");
-        setPw("");
-      }
-    } catch {
-      setError("Connection error, try again");
-    }
+      if (data.success) { onLogin(data.token); }
+      else { setError("Incorrect password"); setPw(""); }
+    } catch { setError("Connection error, try again"); }
     setLoading(false);
   };
 
@@ -68,15 +62,12 @@ function LoginModal({ onLogin, onClose }) {
           <p style={{fontSize:14,color:"#999",margin:0}}>Private articles are password protected</p>
         </div>
         <input type="password" value={pw} onChange={e=>setPw(e.target.value)}
-          onKeyDown={e=>e.key==="Enter"&&attempt()}
-          placeholder="Enter password" autoFocus
-          style={{width:"100%",boxSizing:"border-box",padding:"12px 14px",border:`1px solid ${error?"#e53e3e":"#e0e0e0"}`,
-            borderRadius:9,fontSize:15,marginBottom:error?6:14,outline:"none"}}/>
-        {error && <p style={{color:"#e53e3e",fontSize:13,margin:"0 0 12px"}}>{error}</p>}
+          onKeyDown={e=>e.key==="Enter"&&attempt()} placeholder="Enter password" autoFocus
+          style={{width:"100%",boxSizing:"border-box",padding:"12px 14px",border:`1px solid ${error?"#e53e3e":"#e0e0e0"}`,borderRadius:9,fontSize:15,marginBottom:error?6:14,outline:"none"}}/>
+        {error&&<p style={{color:"#e53e3e",fontSize:13,margin:"0 0 12px"}}>{error}</p>}
         <button onClick={attempt} disabled={loading}
-          style={{width:"100%",padding:"12px",background:"#111",color:"#fff",border:"none",borderRadius:9,
-            fontSize:15,fontWeight:600,cursor:loading?"not-allowed":"pointer",opacity:loading?0.7:1,marginBottom:10}}>
-          {loading ? "Checking…" : "Login"}
+          style={{width:"100%",padding:"12px",background:"#111",color:"#fff",border:"none",borderRadius:9,fontSize:15,fontWeight:600,cursor:loading?"not-allowed":"pointer",opacity:loading?0.7:1,marginBottom:10}}>
+          {loading?"Checking…":"Login"}
         </button>
         <button onClick={onClose}
           style={{width:"100%",padding:"11px",background:"none",color:"#999",border:"1px solid #eee",borderRadius:9,fontSize:14,cursor:"pointer"}}>
@@ -89,7 +80,23 @@ function LoginModal({ onLogin, onClose }) {
 
 function RichEditor({ value, onChange }) {
   const ref = useRef(null);
+  const imgInput = useRef(null);
   const exec = (cmd, val) => { document.execCommand(cmd, false, val); ref.current?.focus(); };
+
+  const insertImage = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      ref.current?.focus();
+      document.execCommand("insertHTML", false,
+        `<img src="${ev.target.result}" style="max-width:100%;height:auto;border-radius:8px;margin:12px 0;display:block;" />`);
+      onChange(ref.current?.innerHTML || "");
+    };
+    reader.readAsDataURL(file);
+    e.target.value = "";
+  };
+
   return (
     <div style={{border:"1px solid #e0e0e0",borderRadius:10,overflow:"hidden",background:"#fff"}}>
       <div style={{display:"flex",gap:3,padding:"8px 12px",background:"#f7f7f5",borderBottom:"1px solid #eee",flexWrap:"wrap",alignItems:"center"}}>
@@ -112,6 +119,11 @@ function RichEditor({ value, onChange }) {
         <button onMouseDown={e=>{e.preventDefault();const u=prompt("URL:");if(u)exec("createLink",u);}}
           style={{display:"flex",alignItems:"center",gap:4,background:"#fff",border:"1px solid #ddd",borderRadius:5,padding:"2px 9px",cursor:"pointer",fontSize:12,color:"#333"}}>
           <LinkIcon/> Link</button>
+        <div style={{width:1,background:"#ddd",height:18,margin:"0 4px"}}/>
+        <button onMouseDown={e=>{e.preventDefault();imgInput.current?.click();}}
+          style={{display:"flex",alignItems:"center",gap:4,background:"#fff",border:"1px solid #ddd",borderRadius:5,padding:"2px 9px",cursor:"pointer",fontSize:12,color:"#333"}}>
+          <ImageIcon/> Image</button>
+        <input ref={imgInput} type="file" accept="image/*" onChange={insertImage} style={{display:"none"}}/>
       </div>
       <div ref={ref} contentEditable suppressContentEditableWarning
         onInput={e=>onChange(e.currentTarget.innerHTML)}
@@ -122,8 +134,7 @@ function RichEditor({ value, onChange }) {
 }
 
 function SourceMgr({ sources, onChange }) {
-  const [lbl,setLbl]=useState("");
-  const [url,setUrl]=useState("");
+  const [lbl,setLbl]=useState(""); const [url,setUrl]=useState("");
   return (
     <div>
       <div style={{display:"flex",gap:8,marginBottom:8,flexWrap:"wrap"}}>
@@ -147,27 +158,36 @@ function SourceMgr({ sources, onChange }) {
 
 function Card({ post, onClick, onDelete, isAdmin }) {
   const color = TOPIC_COLORS[post.topic]||"#555";
+  const hasImg = post.body?.includes("<img");
+  const imgMatch = post.body?.match(/<img[^>]+src="([^"]+)"/);
+  const thumb = imgMatch?.[1];
+
   return (
     <div onClick={onClick}
-      style={{cursor:"pointer",background:"#fff",borderRadius:14,border:"1px solid #ebebeb",padding:"26px 28px",
+      style={{cursor:"pointer",background:"#fff",borderRadius:14,border:"1px solid #ebebeb",overflow:"hidden",
         transition:"all .15s",boxShadow:"0 1px 4px rgba(0,0,0,.04)"}}
       onMouseEnter={e=>{e.currentTarget.style.boxShadow="0 8px 28px rgba(0,0,0,.09)";e.currentTarget.style.transform="translateY(-2px)";}}
       onMouseLeave={e=>{e.currentTarget.style.boxShadow="0 1px 4px rgba(0,0,0,.04)";e.currentTarget.style.transform="none";}}>
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:12}}>
-        <span style={{fontSize:10,fontWeight:700,letterSpacing:1.2,textTransform:"uppercase",color,borderLeft:`3px solid ${color}`,paddingLeft:9}}>{post.topic}</span>
-        <div style={{display:"flex",gap:7,alignItems:"center"}}>
-          {isAdmin&&<span style={{display:"flex",alignItems:"center",gap:4,fontSize:11,fontWeight:600,padding:"3px 9px",borderRadius:20,
-            color:post.status==="public"?"#1a6b3c":"#888",background:post.status==="public"?"#e6f4ed":"#f2f2f2"}}>
-            {post.status==="public"?<GlobeIcon/>:<LockIcon/>}{post.status==="public"?"Public":"Private"}</span>}
-          {isAdmin&&<button onClick={e=>{e.stopPropagation();if(window.confirm("Delete this article?"))onDelete(post.id);}}
-            style={{background:"none",border:"none",cursor:"pointer",color:"#ddd",padding:2}}><TrashIcon/></button>}
+      {thumb&&<div style={{height:160,overflow:"hidden",background:"#f0f0f0"}}>
+        <img src={thumb} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/>
+      </div>}
+      <div style={{padding:"22px 24px"}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:12}}>
+          <span style={{fontSize:10,fontWeight:700,letterSpacing:1.2,textTransform:"uppercase",color,borderLeft:`3px solid ${color}`,paddingLeft:9}}>{post.topic}</span>
+          <div style={{display:"flex",gap:7,alignItems:"center"}}>
+            {isAdmin&&<span style={{display:"flex",alignItems:"center",gap:4,fontSize:11,fontWeight:600,padding:"3px 9px",borderRadius:20,
+              color:post.status==="public"?"#1a6b3c":"#888",background:post.status==="public"?"#e6f4ed":"#f2f2f2"}}>
+              {post.status==="public"?<GlobeIcon/>:<LockIcon/>}{post.status==="public"?"Public":"Private"}</span>}
+            {isAdmin&&<button onClick={e=>{e.stopPropagation();if(window.confirm("Delete this article?"))onDelete(post.id);}}
+              style={{background:"none",border:"none",cursor:"pointer",color:"#ddd",padding:2}}><TrashIcon/></button>}
+          </div>
         </div>
-      </div>
-      <h2 style={{fontSize:19,fontWeight:700,lineHeight:1.3,margin:"0 0 9px",color:"#111",fontFamily:"Georgia,serif"}}>{post.title}</h2>
-      <p style={{fontSize:14,color:"#777",lineHeight:1.6,margin:"0 0 18px"}}>{post.summary}</p>
-      <div style={{display:"flex",justifyContent:"space-between",fontSize:12,color:"#bbb"}}>
-        <span>{fmt(post.updatedAt)}</span>
-        {post.sources?.length>0&&<span>{post.sources.length} source{post.sources.length!==1?"s":""}</span>}
+        <h2 style={{fontSize:19,fontWeight:700,lineHeight:1.3,margin:"0 0 9px",color:"#111",fontFamily:"Georgia,serif"}}>{post.title}</h2>
+        <p style={{fontSize:14,color:"#777",lineHeight:1.6,margin:"0 0 18px"}}>{post.summary}</p>
+        <div style={{display:"flex",justifyContent:"space-between",fontSize:12,color:"#bbb"}}>
+          <span>{fmt(post.updatedAt)}</span>
+          {post.sources?.length>0&&<span>{post.sources.length} source{post.sources.length!==1?"s":""}</span>}
+        </div>
       </div>
     </div>
   );
@@ -306,7 +326,7 @@ export default function App() {
 
   const Header = () => (
     <header style={{background:"#fff",borderBottom:"1px solid #ebebeb",padding:"0 40px",position:"sticky",top:0,zIndex:100}}>
-      <div style={{maxWidth:1400,margin:"0 auto",display:"flex",alignItems:"center",justifyContent:"space-between",height:66}}>
+      <div style={{maxWidth:"100%",margin:"0 auto",display:"flex",alignItems:"center",justifyContent:"space-between",height:66}}>
         <div style={{display:"flex",alignItems:"baseline",gap:14}}>
           <span onClick={()=>setView("home")} style={{fontSize:22,fontWeight:800,fontFamily:"Georgia,serif",color:"#111",letterSpacing:"-0.5px",cursor:"pointer"}}>The Notebook</span>
           <span style={{fontSize:12,color:"#bbb"}}>{isAdmin?`${pub} public · ${posts.length-pub} private`:`${pub} articles`}</span>
@@ -320,8 +340,7 @@ export default function App() {
           </>}
           <button onClick={isAdmin?handleLogout:()=>setShowLogin(true)}
             title={isAdmin?"Logout":"Admin Login"}
-            style={{display:"flex",alignItems:"center",gap:6,background:"none",border:"1px solid #e0e0e0",borderRadius:8,
-              padding:"8px 12px",cursor:"pointer",color:isAdmin?"#999":"#555",fontSize:13}}>
+            style={{display:"flex",alignItems:"center",gap:6,background:"none",border:"1px solid #e0e0e0",borderRadius:8,padding:"8px 12px",cursor:"pointer",color:isAdmin?"#999":"#555",fontSize:13}}>
             {isAdmin?<><LogoutIcon/> Logout</>:<><LoginIcon/> Login</>}
           </button>
         </div>
@@ -330,7 +349,7 @@ export default function App() {
   );
 
   if(view==="read") return (
-    <div style={{minHeight:"100vh",background:"#faf9f7"}}>
+    <div style={{minHeight:"100vh",width:"100%",background:"#faf9f7"}}>
       {showLogin&&<LoginModal onLogin={handleLogin} onClose={()=>setShowLogin(false)}/>}
       <Header/>
       <div style={{padding:"36px 48px"}}><Reader post={activePost} onBack={()=>setView("home")} onEdit={()=>setView("edit")} isAdmin={isAdmin}/></div>
@@ -338,17 +357,17 @@ export default function App() {
   );
 
   if(view==="edit"||view==="new") return (
-    <div style={{minHeight:"100vh",background:"#faf9f7"}}>
+    <div style={{minHeight:"100vh",width:"100%",background:"#faf9f7"}}>
       <Header/>
       <Editor post={view==="new"?{}:activePost} onSave={p=>{handleSave(p);setActiveId(p.id);setView("read");}} onBack={()=>setView(activeId?"read":"home")}/>
     </div>
   );
 
   return (
-    <div style={{minHeight:"100vh",background:"#faf9f7",fontFamily:"system-ui,sans-serif"}}>
+    <div style={{minHeight:"100vh",width:"100%",background:"#faf9f7",fontFamily:"system-ui,sans-serif"}}>
       {showLogin&&<LoginModal onLogin={handleLogin} onClose={()=>setShowLogin(false)}/>}
       <Header/>
-      <main style={{maxWidth:1400,margin:"0 auto",padding:"34px 40px"}}>
+      <main style={{width:"100%",boxSizing:"border-box",padding:"34px 40px"}}>
         <div style={{display:"flex",gap:10,marginBottom:28,flexWrap:"wrap",alignItems:"center"}}>
           <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search articles…"
             style={{padding:"8px 14px",border:"1px solid #ddd",borderRadius:8,fontSize:13,flex:"0 0 220px"}}/>
