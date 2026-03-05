@@ -79,60 +79,51 @@ function LoginModal({ onLogin, onClose }) {
 }
 
 function RichEditor({ value, onChange }) {
-  const ref = useRef(null);
-  const imgInput = useRef(null);
-  const exec = (cmd, val) => { document.execCommand(cmd, false, val); ref.current?.focus(); };
-
-  const insertImage = (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      ref.current?.focus();
-      document.execCommand("insertHTML", false,
-        `<img src="${ev.target.result}" style="max-width:100%;height:auto;border-radius:8px;margin:12px 0;display:block;" />`);
-      onChange(ref.current?.innerHTML || "");
-    };
-    reader.readAsDataURL(file);
-    e.target.value = "";
+  const toText = (html) => {
+    const d = document.createElement("div");
+    d.innerHTML = html;
+    return d.innerText || "";
   };
+  const toHtml = (text) => {
+    return text
+      .split("\n")
+      .map(line => line.trim() === "" ? "<br>" : `<p>${line}</p>`)
+      .join("");
+  };
+  const [text, setText] = useState(() => toText(value));
 
   return (
     <div style={{border:"1px solid #e0e0e0",borderRadius:10,overflow:"hidden",background:"#fff"}}>
       <div style={{display:"flex",gap:3,padding:"8px 12px",background:"#f7f7f5",borderBottom:"1px solid #eee",flexWrap:"wrap",alignItems:"center"}}>
-        {[["bold","B"],["italic","I"],["underline","U"]].map(([cmd,lbl])=>(
-          <button key={cmd} onMouseDown={e=>{e.preventDefault();exec(cmd);}}
-            style={{fontWeight:cmd==="bold"?"bold":"normal",fontStyle:cmd==="italic"?"italic":"normal",
-              textDecoration:cmd==="underline"?"underline":"none",background:"#fff",border:"1px solid #ddd",
-              borderRadius:5,padding:"2px 9px",cursor:"pointer",fontSize:13,color:"#333"}}>{lbl}</button>
-        ))}
-        <div style={{width:1,background:"#ddd",height:18,margin:"0 4px"}}/>
-        {[["H2","formatBlock","h2"],["H3","formatBlock","h3"],["P","formatBlock","p"]].map(([lbl,cmd,val])=>(
-          <button key={lbl} onMouseDown={e=>{e.preventDefault();exec(cmd,val);}}
-            style={{background:"#fff",border:"1px solid #ddd",borderRadius:5,padding:"2px 9px",cursor:"pointer",fontSize:12,color:"#333"}}>{lbl}</button>
-        ))}
-        <div style={{width:1,background:"#ddd",height:18,margin:"0 4px"}}/>
-        <button onMouseDown={e=>{e.preventDefault();exec("insertUnorderedList");}}
-          style={{background:"#fff",border:"1px solid #ddd",borderRadius:5,padding:"2px 9px",cursor:"pointer",fontSize:12,color:"#333"}}>• List</button>
-        <button onMouseDown={e=>{e.preventDefault();exec("formatBlock","blockquote");}}
-          style={{background:"#fff",border:"1px solid #ddd",borderRadius:5,padding:"2px 9px",cursor:"pointer",fontSize:12,color:"#333"}}>" Quote</button>
-        <button onMouseDown={e=>{e.preventDefault();const u=prompt("URL:");if(u)exec("createLink",u);}}
-          style={{display:"flex",alignItems:"center",gap:4,background:"#fff",border:"1px solid #ddd",borderRadius:5,padding:"2px 9px",cursor:"pointer",fontSize:12,color:"#333"}}>
-          <LinkIcon/> Link</button>
-        <div style={{width:1,background:"#ddd",height:18,margin:"0 4px"}}/>
-        <button onMouseDown={e=>{e.preventDefault();imgInput.current?.click();}}
-          style={{display:"flex",alignItems:"center",gap:4,background:"#fff",border:"1px solid #ddd",borderRadius:5,padding:"2px 9px",cursor:"pointer",fontSize:12,color:"#333"}}>
-          <ImageIcon/> Image</button>
-        <input ref={imgInput} type="file" accept="image/*" onChange={insertImage} style={{display:"none"}}/>
+        <span style={{fontSize:12,color:"#aaa",fontStyle:"italic"}}>Write your article below. Use blank lines to separate paragraphs.</span>
       </div>
-      <div ref={ref} contentEditable suppressContentEditableWarning
-        onInput={e=>onChange(e.currentTarget.innerHTML)}
-        dangerouslySetInnerHTML={{__html:value}}
-        style={{minHeight:"calc(100vh - 340px)",padding:"28px 32px",fontSize:17,lineHeight:1.8,color:"#1a1a1a",outline:"none",fontFamily:"Georgia,serif",direction:"ltr",textAlign:"left",unicodeBidi:"plaintext",wordBreak:"break-word",whiteSpace:"pre-wrap"}}/>
+      <textarea
+        value={text}
+        onChange={e => {
+          setText(e.target.value);
+          onChange(toHtml(e.target.value));
+        }}
+        placeholder="Start writing your article here..."
+        style={{
+          width:"100%",
+          boxSizing:"border-box",
+          minHeight:"calc(100vh - 340px)",
+          padding:"28px 32px",
+          fontSize:17,
+          lineHeight:1.8,
+          color:"#1a1a1a",
+          fontFamily:"Georgia,serif",
+          border:"none",
+          outline:"none",
+          resize:"vertical",
+          background:"#fff",
+          direction:"ltr",
+          textAlign:"left"
+        }}
+      />
     </div>
   );
 }
-
 function SourceMgr({ sources, onChange }) {
   const [lbl,setLbl]=useState(""); const [url,setUrl]=useState("");
   return (
