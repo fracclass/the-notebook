@@ -445,8 +445,7 @@ export default function App() {
 
         {visible.length===0?(
           <div style={{textAlign:"center",padding:"90px 0"}}>
-            <div style={{fontSize:44,marginBottom:14}}>✍️</div>
-            <div style={{fontSize:17,fontWeight:600,color:"#aaa",marginBottom:6}}>No articles yet</div>
+            <div style={{fontSize:17,fontWeight:600,color:"#aaa",marginBottom:6}}>New articles coming soon!</div>
           </div>
         ):(
           <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(340px,1fr))",gap:20}}>
