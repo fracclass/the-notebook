@@ -15,6 +15,14 @@ const REGION_COLORS = {
 const now = () => new Date().toISOString();
 const fmt = (iso) => new Date(iso).toLocaleDateString("en-US",{year:"numeric",month:"long",day:"numeric"});
 
+// Reading time: strip HTML tags, count words, assume 200 wpm
+const readingTime = (html) => {
+  const text = html?.replace(/<[^>]+>/g,"") || "";
+  const words = text.trim().split(/\s+/).filter(Boolean).length;
+  const mins = Math.max(1, Math.round(words / 200));
+  return `${mins} min read`;
+};
+
 const SAMPLE = [
   {id:"1",title:"The Quiet Pivot in Battery Storage",topics:["Energy"],regions:["Global"],status:"public",
    author:"Franz-Frederick Acclassato",
@@ -54,6 +62,26 @@ async function apiDeletePost(id) {
 
 function initAuth() {
   try { return localStorage.getItem("nb_auth")==="true"; } catch { return false; }
+}
+
+// ── OG Meta tag updater ────────────────────────────────────────────────────────
+function setMeta(property, content) {
+  let el = document.querySelector(`meta[property="${property}"]`) ||
+           document.querySelector(`meta[name="${property}"]`);
+  if (!el) { el = document.createElement("meta"); el.setAttribute(property.startsWith("og:")?"property":"name", property); document.head.appendChild(el); }
+  el.setAttribute("content", content);
+}
+function updateOGTags({ title, description, url, image }) {
+  document.title = title ? `${title} — The Notebook` : "The Notebook";
+  setMeta("og:title", title || "The Notebook");
+  setMeta("og:description", description || "Independent research and analysis.");
+  setMeta("og:url", url || window.location.href);
+  setMeta("og:type", title ? "article" : "website");
+  setMeta("og:site_name", "The Notebook");
+  if (image) setMeta("og:image", image);
+  setMeta("twitter:card", "summary_large_image");
+  setMeta("twitter:title", title || "The Notebook");
+  setMeta("twitter:description", description || "Independent research and analysis.");
 }
 
 function LoginModal({ onLogin, onClose }) {
@@ -182,8 +210,37 @@ function SourceMgr({ sources, onChange }) {
   );
 }
 
+// ── Footer ─────────────────────────────────────────────────────────────────────
+function Footer() {
+  const year = new Date().getFullYear();
+  return (
+    <footer style={{borderTop:"1px solid #ebebeb",background:"#fff",marginTop:80}}>
+      <div style={{maxWidth:1200,margin:"0 auto",padding:"32px 40px",display:"flex",flexWrap:"wrap",
+        justifyContent:"space-between",alignItems:"center",gap:16}}>
+        <div>
+          <span style={{fontFamily:"Georgia,serif",fontWeight:800,fontSize:16,color:"#111",letterSpacing:"-0.3px"}}>The Notebook</span>
+          <span style={{display:"block",fontSize:12,color:"#bbb",marginTop:4}}>
+            Independent research &amp; analysis
+          </span>
+        </div>
+        <div style={{fontSize:12,color:"#bbb",textAlign:"center",lineHeight:1.7}}>
+          <div>© {year} The Notebook · Franz-Frederick Acclassato · All rights reserved</div>
+          <div style={{marginTop:2}}>
+            Published content is for informational purposes only and does not constitute financial, legal, or investment advice.
+          </div>
+        </div>
+        <div style={{fontSize:12,color:"#ccc"}}>
+          <a href="https://thenotebook.press" style={{color:"#bbb",textDecoration:"none"}}>thenotebook.press</a>
+        </div>
+      </div>
+    </footer>
+  );
+}
+
+// ── Card ───────────────────────────────────────────────────────────────────────
 function Card({ post, onClick, onDelete, isAdmin }) {
   const imgMatch=post.body?.match(/<img[^>]+src="([^"]+)"/); const thumb=imgMatch?.[1];
+  const rTime = readingTime(post.body);
   return (
     <div onClick={onClick}
       style={{cursor:"pointer",background:"#fff",borderRadius:14,border:"1px solid #ebebeb",overflow:"hidden",transition:"all .15s",boxShadow:"0 1px 4px rgba(0,0,0,.04)"}}
@@ -210,15 +267,16 @@ function Card({ post, onClick, onDelete, isAdmin }) {
         </div>
         <h2 style={{fontSize:19,fontWeight:700,lineHeight:1.3,margin:"0 0 9px",color:"#111",fontFamily:"Georgia,serif"}}>{post.title}</h2>
         <p style={{fontSize:14,color:"#777",lineHeight:1.6,margin:"0 0 18px"}}>{post.summary}</p>
-        <div style={{display:"flex",justifyContent:"space-between",fontSize:12,color:"#bbb"}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",fontSize:12,color:"#bbb"}}>
           <span>{post.author&&<span style={{color:"#aaa",marginRight:6}}>{post.author} · </span>}{fmt(post.updatedAt)}</span>
-          {post.sources?.length>0&&<span>{post.sources.length} source{post.sources.length!==1?"s":""}</span>}
+          <span style={{background:"#f5f5f3",padding:"2px 8px",borderRadius:8,fontSize:11,fontWeight:600,color:"#aaa"}}>{rTime}</span>
         </div>
       </div>
     </div>
   );
 }
 
+// ── Editor ─────────────────────────────────────────────────────────────────────
 function Editor({ post, onSave, onBack }) {
   const [title,setTitle]     = useState(post.title||"");
   const [topics,setTopics]   = useState(post.topics||[]);
@@ -247,7 +305,6 @@ function Editor({ post, onSave, onBack }) {
             <SaveIcon/> Save</button>
         </div>
       </div>
-
       <div style={{display:"flex",border:"1px solid #ddd",borderRadius:8,overflow:"hidden",marginBottom:24,width:"fit-content"}}>
         {["public","private"].map(s=>(
           <button key={s} onClick={()=>setStatus(s)}
@@ -256,10 +313,8 @@ function Editor({ post, onSave, onBack }) {
             {s==="public"?<GlobeIcon/>:<LockIcon/>}{s==="public"?"Public":"Private"}</button>
         ))}
       </div>
-
       <MultiPicker label="Topics" options={TOPICS} colors={TOPIC_COLORS} selected={topics} onChange={setTopics}/>
       <MultiPicker label="Region" options={REGIONS} colors={REGION_COLORS} selected={regions} onChange={setRegions}/>
-
       <input value={title} onChange={e=>setTitle(e.target.value)} placeholder="Article title…"
         style={{width:"100%",boxSizing:"border-box",fontSize:32,fontWeight:700,fontFamily:"Georgia,serif",border:"none",
           borderBottom:"2px solid #eee",padding:"6px 0",marginBottom:14,outline:"none",color:"#111",background:"transparent",marginTop:10}}/>
@@ -269,7 +324,6 @@ function Editor({ post, onSave, onBack }) {
       <input value={author} onChange={e=>setAuthor(e.target.value)} placeholder="Author name…"
         style={{width:"100%",boxSizing:"border-box",fontSize:14,border:"none",borderBottom:"1px solid #eee",
           padding:"6px 0",marginBottom:26,outline:"none",color:"#555",background:"transparent"}}/>
-
       <div style={{marginBottom:30}}>
         <div style={{fontSize:11,fontWeight:700,letterSpacing:1.1,textTransform:"uppercase",color:"#bbb",marginBottom:10}}>Body</div>
         <RichEditor value={body} onChange={setBody}/>
@@ -282,7 +336,18 @@ function Editor({ post, onSave, onBack }) {
   );
 }
 
+// ── Reader ─────────────────────────────────────────────────────────────────────
 function Reader({ post, onEdit, onBack, isAdmin }) {
+  const rTime = readingTime(post.body);
+  // Extract first image for OG tag
+  const imgMatch = post.body?.match(/<img[^>]+src="([^"]+)"/);
+  const thumb = imgMatch?.[1];
+
+  useEffect(()=>{
+    updateOGTags({ title: post.title, description: post.summary, image: thumb });
+    return () => updateOGTags({}); // reset on unmount
+  },[post.title, post.summary, thumb]);
+
   return (
     <div style={{maxWidth:740,margin:"0 auto",padding:"32px 0 100px"}}>
       <div style={{display:"flex",justifyContent:"space-between",marginBottom:40}}>
@@ -304,9 +369,12 @@ function Reader({ post, onEdit, onBack, isAdmin }) {
       </div>
       <h1 style={{fontSize:40,fontWeight:700,lineHeight:1.2,margin:"0 0 16px",color:"#111",fontFamily:"Georgia,serif"}}>{post.title}</h1>
       <p style={{fontSize:18,color:"#666",fontStyle:"italic",lineHeight:1.65,marginBottom:14,fontFamily:"Georgia,serif"}}>{post.summary}</p>
-      <div style={{fontSize:13,color:"#bbb",marginBottom:40,paddingBottom:22,borderBottom:"1px solid #eee"}}>
-        {post.author&&<span style={{fontWeight:600,color:"#555",marginRight:6}}>By {post.author} · </span>}
-        {fmt(post.createdAt)}{post.updatedAt!==post.createdAt&&<span style={{color:"#aaa"}}> · Last revised {fmt(post.updatedAt)}</span>}
+      <div style={{fontSize:13,color:"#bbb",marginBottom:40,paddingBottom:22,borderBottom:"1px solid #eee",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+        <span>
+          {post.author&&<span style={{fontWeight:600,color:"#555",marginRight:6}}>By {post.author} · </span>}
+          {fmt(post.createdAt)}{post.updatedAt!==post.createdAt&&<span style={{color:"#aaa"}}> · Last revised {fmt(post.updatedAt)}</span>}
+        </span>
+        <span style={{background:"#f5f5f3",padding:"3px 10px",borderRadius:8,fontSize:11,fontWeight:600,color:"#aaa",flexShrink:0}}>{rTime}</span>
       </div>
       <div style={{fontSize:17,lineHeight:1.85,color:"#1a1a1a",fontFamily:"Georgia,serif"}} dangerouslySetInnerHTML={{__html:post.body}}/>
       {post.sources?.length>0&&(
@@ -324,6 +392,7 @@ function Reader({ post, onEdit, onBack, isAdmin }) {
   );
 }
 
+// ── App ────────────────────────────────────────────────────────────────────────
 export default function App() {
   const [posts,setPosts]           = useState([]);
   const [loading,setLoading]       = useState(true);
@@ -339,6 +408,9 @@ export default function App() {
   useEffect(()=>{
     apiGetPosts().then(data=>{ setPosts(data||SAMPLE); setLoading(false); });
   },[]);
+
+  // Reset OG tags when returning home
+  useEffect(()=>{ if(view==="home") updateOGTags({}); },[view]);
 
   const saveAll = async (updated) => { setPosts(updated); await apiSetPosts(updated); };
   const handleSave = (p) => saveAll(posts.find(x=>x.id===p.id)?posts.map(x=>x.id===p.id?p:x):[p,...posts]);
@@ -392,7 +464,10 @@ export default function App() {
     <div style={{minHeight:"100vh",width:"100%",background:"#faf9f7"}}>
       {showLogin&&<LoginModal onLogin={handleLogin} onClose={()=>setShowLogin(false)}/>}
       <Header/>
-      <div style={{padding:"36px 48px"}}><Reader post={activePost} onBack={()=>setView("home")} onEdit={()=>setView("edit")} isAdmin={isAdmin}/></div>
+      <div style={{padding:"36px 48px"}}>
+        <Reader post={activePost} onBack={()=>setView("home")} onEdit={()=>setView("edit")} isAdmin={isAdmin}/>
+      </div>
+      <Footer/>
     </div>
   );
 
@@ -404,10 +479,10 @@ export default function App() {
   );
 
   return (
-    <div style={{minHeight:"100vh",width:"100%",background:"#faf9f7",fontFamily:"system-ui,sans-serif"}}>
+    <div style={{minHeight:"100vh",width:"100%",background:"#faf9f7",fontFamily:"system-ui,sans-serif",display:"flex",flexDirection:"column"}}>
       {showLogin&&<LoginModal onLogin={handleLogin} onClose={()=>setShowLogin(false)}/>}
       <Header/>
-      <main style={{width:"100%",boxSizing:"border-box",padding:"34px 40px"}}>
+      <main style={{flex:1,width:"100%",boxSizing:"border-box",padding:"34px 40px"}}>
         <div style={{display:"flex",gap:10,marginBottom:16,flexWrap:"wrap",alignItems:"center"}}>
           <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search articles…"
             style={{padding:"8px 14px",border:"1px solid #ddd",borderRadius:8,fontSize:13,flex:"0 0 220px"}}/>
@@ -420,8 +495,6 @@ export default function App() {
             ))}
           </div>}
         </div>
-
-        {/* Topic filters */}
         <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:8}}>
           {["All",...TOPICS].map(t=>(
             <button key={t} onClick={()=>setFilterTopic(t)}
@@ -431,8 +504,6 @@ export default function App() {
                 color:filterTopic===t?"#fff":(TOPIC_COLORS[t]||"#555")}}>{t}</button>
           ))}
         </div>
-
-        {/* Region filters */}
         <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:28}}>
           {["All",...REGIONS].map(r=>(
             <button key={r} onClick={()=>setFilterRegion(r)}
@@ -442,7 +513,6 @@ export default function App() {
                 color:filterRegion===r?"#fff":(REGION_COLORS[r]||"#888")}}>{r}</button>
           ))}
         </div>
-
         {visible.length===0?(
           <div style={{textAlign:"center",padding:"90px 0"}}>
             <div style={{fontSize:17,fontWeight:600,color:"#aaa",marginBottom:6}}>New articles coming soon!</div>
@@ -453,6 +523,7 @@ export default function App() {
           </div>
         )}
       </main>
+      <Footer/>
     </div>
   );
 }
