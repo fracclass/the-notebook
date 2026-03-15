@@ -1,6 +1,7 @@
 export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).end();
   const { posts } = req.body;
+  // Store cleanly — single JSON.stringify, no extra wrapping
   await fetch(`${process.env.UPSTASH_REDIS_REST_URL}/set/nb_posts`, {
     method: "POST",
     headers: {
