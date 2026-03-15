@@ -10,8 +10,9 @@ const REGIONS = ["Africa","Americas","Asia-Pacific","Europe","Middle East","Glob
 const now = () => new Date().toISOString();
 const fmt = (iso, locale="en-US") => new Date(iso).toLocaleDateString(locale,{year:"numeric",month:"long",day:"numeric"});
 const readingTime = (html) => {
-  const words = (html||"").replace(/<[^>]+>/g,"").trim().split(/\s+/).filter(Boolean).length;
-  return Math.max(1,Math.round(words/200));
+  const text = (html||"").replace(/<[^>]+>/g,"").replace(/&\w+;/g," ");
+  const words = text.trim().split(/\s+/).filter(Boolean).length;
+  return Math.max(1,Math.round(words/238));
 };
 
 const SAMPLE = [
@@ -521,6 +522,9 @@ export default function App() {
   },[]);
 
   useEffect(()=>{ if(view==="home") updateOGTags({}); },[view]);
+
+  // Re-apply Google Translate when navigating between views (SPA navigation)
+  useEffect(() => { if (lang !== 'en') applyGoogleTranslate(lang); }, [view, activeId]);
 
   const handleSave = async (p) => {
     const updated = posts.find(x=>x.id===p.id)
