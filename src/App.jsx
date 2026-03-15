@@ -352,7 +352,7 @@ function Editor({ post, onSave, onBack }) {
     onSave(p); setFlash(true); setTimeout(()=>setFlash(false),2000);
   };
   return (
-    <div style={{width:"100%",boxSizing:"border-box",padding:"32px 48px 100px"}}>
+    <div className="notranslate" style={{width:"100%",boxSizing:"border-box",padding:"32px 48px 100px"}}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:32}}>
         <button onClick={onBack} style={{display:"flex",alignItems:"center",gap:6,background:"none",border:`1px solid ${C.editorBorderStrong}`,borderRadius:8,padding:"8px 16px",cursor:"pointer",fontSize:13,color:C.textSecondary}}><BackIcon/> {t('back')}</button>
         <div style={{display:"flex",gap:10,alignItems:"center"}}>
