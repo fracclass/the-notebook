@@ -53,16 +53,24 @@ const HamburgerIcon = () => (
   </svg>
 );
 
-// API
-async function apiGetPosts() {
+// ── API ────────────────────────────────────────────────────────────────────────
+// Fetch lightweight index for homepage
+async function apiGetIndex() {
   try { const r=await fetch("/api/posts-get"); const d=await r.json(); return d.posts||null; } catch { return null; }
 }
-async function apiSetPosts(posts) {
-  try { await fetch("/api/posts-set",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({posts})}); } catch {}
+// Fetch single full article by id
+async function apiGetPost(id) {
+  try { const r=await fetch(`/api/post-get?id=${id}`); const d=await r.json(); return d.post||null; } catch { return null; }
 }
+// Save a single article (updates index + individual key)
+async function apiSavePost(post) {
+  try { await fetch("/api/posts-set",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({post})}); } catch {}
+}
+// Delete an article
 async function apiDeletePost(id) {
   try { await fetch("/api/posts-delete",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({id})}); } catch {}
 }
+
 function initAuth() {
   try { return localStorage.getItem("nb_auth")==="true"; } catch { return false; }
 }
@@ -85,7 +93,7 @@ function updateOGTags({ title, description, image } = {}) {
   setMeta("twitter:card", "summary_large_image"); setMeta("twitter:title", siteTitle); setMeta("twitter:description", siteDesc);
 }
 
-// Sidebar
+// ── Sidebar ────────────────────────────────────────────────────────────────────
 function Sidebar({ isOpen, onClose, isAdmin, onLogin, onLogout, onNewArticle }) {
   const [panel, setPanel] = useState(null);
   const [cName,setCName]=useState(""); const [cEmail,setCEmail]=useState("");
@@ -117,12 +125,10 @@ function Sidebar({ isOpen, onClose, isAdmin, onLogin, onLogout, onNewArticle }) 
         boxShadow:isOpen?"4px 0 24px rgba(0,0,0,.08)":"none",
         transform:isOpen?"translateX(0)":"translateX(-100%)",
         transition:"transform .25s cubic-bezier(.4,0,.2,1)",display:"flex",flexDirection:"column",overflow:"hidden"}}>
-
         <div style={{padding:"20px 20px 16px",borderBottom:"1px solid #ebebeb",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
           <span style={{fontFamily:"Georgia,serif",fontWeight:800,fontSize:18,color:"#111",letterSpacing:"-0.3px"}}>The Notebook</span>
           <button onClick={onClose} style={{background:"none",border:"none",cursor:"pointer",color:"#bbb",padding:4,display:"flex",alignItems:"center"}}><XIcon/></button>
         </div>
-
         <nav style={{padding:"12px 12px 0",flex:1,overflowY:"auto"}}>
           {isAdmin&&<>
             <div style={{fontSize:10,fontWeight:700,letterSpacing:1.2,textTransform:"uppercase",color:"#bbb",padding:"8px 16px 4px"}}>Admin</div>
@@ -135,15 +141,13 @@ function Sidebar({ isOpen, onClose, isAdmin, onLogin, onLogout, onNewArticle }) 
           {navBtn("About",<InfoIcon/>,()=>setPanel(panel==="about"?null:"about"),panel==="about")}
           {navBtn("Contact",<MailIcon/>,()=>setPanel(panel==="contact"?null:"contact"),panel==="contact")}
         </nav>
-
         {panel==="about"&&(
           <div style={{padding:"20px",borderTop:"1px solid #ebebeb",background:"#faf9f7",fontSize:13,lineHeight:1.8,color:"#555"}}>
             <div style={{fontWeight:700,color:"#111",marginBottom:10,fontSize:14}}>About The Notebook</div>
-            <p style={{margin:"0 0 10px"}}>The Notebook is an independent analysis publication. We write about the forces shaping economies, industries, and markets : from the energy transition to the technology shifts transforming the world as we know it.</p>
-            <p style={{margin:0}}>Our analysis is built on research, experts insight, data and latest news; cross-referenced against the human reality behind the numbers. We write to understand, and to share what we find as clearly as possible.</p>
+            <p style={{margin:"0 0 10px"}}>The Notebook is an independent analysis publication. We write about the forces shaping economies, industries, and markets — from the energy transition to the technology shifts transforming the world as we know it.</p>
+            <p style={{margin:0}}>Through latest research, expert insight, data, and the news, cross-referenced against what matters most: the people driving these changes and those living them. We deliver a straightforward analysis to educate ourselves, and share it plainly.</p>
           </div>
         )}
-
         {panel==="contact"&&(
           <div style={{padding:"20px",borderTop:"1px solid #ebebeb",background:"#faf9f7"}}>
             <div style={{fontWeight:700,color:"#111",marginBottom:14,fontSize:14}}>Get in touch</div>
@@ -171,7 +175,6 @@ function Sidebar({ isOpen, onClose, isAdmin, onLogin, onLogout, onNewArticle }) 
             )}
           </div>
         )}
-
         <div style={{padding:"14px 20px",borderTop:"1px solid #ebebeb",fontSize:11,color:"#bbb"}}>
           © {new Date().getFullYear()} The Notebook
         </div>
@@ -386,7 +389,10 @@ function Editor({ post, onSave, onBack }) {
   const [summary,setSummary]=useState(post.summary||""); const [author,setAuthor]=useState(post.author||"");
   const [body,setBody]=useState(post.body||"<p><br></p>"); const [sources,setSources]=useState(post.sources||[]);
   const [flash,setFlash]=useState(false);
-  const save=()=>{ const p={...post,id:post.id||String(Date.now()),title,topics,regions,status,summary,author,body,sources,createdAt:post.createdAt||now(),updatedAt:now()}; onSave(p); setFlash(true); setTimeout(()=>setFlash(false),2000); };
+  const save=()=>{
+    const p={...post,id:post.id||String(Date.now()),title,topics,regions,status,summary,author,body,sources,createdAt:post.createdAt||now(),updatedAt:now()};
+    onSave(p); setFlash(true); setTimeout(()=>setFlash(false),2000);
+  };
   return (
     <div style={{width:"100%",boxSizing:"border-box",padding:"32px 48px 100px"}}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:32}}>
@@ -478,39 +484,78 @@ function Footer() {
   );
 }
 
+// ── App ────────────────────────────────────────────────────────────────────────
 export default function App() {
-  const [posts,setPosts]=useState([]); const [loading,setLoading]=useState(true);
-  const [view,setView]=useState("home"); const [activeId,setActiveId]=useState(null);
-  const [filterTopic,setFilterTopic]=useState("All"); const [filterRegion,setFilterRegion]=useState("All");
-  const [filterStatus,setFilterStatus]=useState("All"); const [search,setSearch]=useState("");
-  const [isAdmin,setIsAdmin]=useState(initAuth); const [showLogin,setShowLogin]=useState(false);
-  const [sidebarOpen,setSidebarOpen]=useState(false);
+  const [index,setIndex]           = useState([]);   // lightweight list for homepage
+  const [activePost,setActivePost] = useState(null); // full article currently open
+  const [loading,setLoading]       = useState(true);
+  const [postLoading,setPostLoading] = useState(false);
+  const [view,setView]             = useState("home");
+  const [activeId,setActiveId]     = useState(null);
+  const [filterTopic,setFilterTopic]   = useState("All");
+  const [filterRegion,setFilterRegion] = useState("All");
+  const [filterStatus,setFilterStatus] = useState("All");
+  const [search,setSearch]         = useState("");
+  const [isAdmin,setIsAdmin]       = useState(initAuth);
+  const [showLogin,setShowLogin]   = useState(false);
+  const [sidebarOpen,setSidebarOpen] = useState(false);
 
-  useEffect(()=>{ apiGetPosts().then(data=>{setPosts(data||SAMPLE);setLoading(false);}); },[]);
+  // Load index on mount
+  useEffect(()=>{
+    apiGetIndex().then(data=>{ setIndex(data||SAMPLE); setLoading(false); });
+  },[]);
+
   useEffect(()=>{ if(view==="home") updateOGTags({}); },[view]);
 
-  const saveAll=async(updated)=>{setPosts(updated);await apiSetPosts(updated);};
-  const handleSave=(p)=>saveAll(posts.find(x=>x.id===p.id)?posts.map(x=>x.id===p.id?p:x):[p,...posts]);
-  const handleDelete=async(id)=>{const updated=posts.filter(p=>p.id!==id);setPosts(updated);await apiDeletePost(id);};
-  const activePost=posts.find(p=>p.id===activeId)||{};
-  const handleLogin=(token)=>{setIsAdmin(true);try{localStorage.setItem("nb_auth","true");localStorage.setItem("nb_token",token);}catch{}setShowLogin(false);};
-  const handleLogout=()=>{setIsAdmin(false);try{localStorage.removeItem("nb_auth");localStorage.removeItem("nb_token");}catch{};};
+  // Open an article — fetch full post
+  const openPost = async (id) => {
+    setActiveId(id);
+    setView("read");
+    setPostLoading(true);
+    const full = await apiGetPost(id);
+    // Fall back to index entry if individual fetch fails (e.g. SAMPLE data)
+    const fallback = index.find(p=>p.id===id) || null;
+    setActivePost(full || fallback);
+    setPostLoading(false);
+  };
 
-  const visiblePosts=posts.filter(p=>isAdmin?true:p.status==="public");
-  const visible=visiblePosts.filter(p=>{
+  // Save — updates index state and persists
+  const handleSave = async (post) => {
+    await apiSavePost(post);
+    // Update index: lightweight entry
+    const { body, sources, ...meta } = post;
+    setIndex(prev => {
+      const exists = prev.findIndex(p=>p.id===post.id);
+      if (exists>=0) { const next=[...prev]; next[exists]=meta; return next; }
+      return [meta, ...prev];
+    });
+    setActivePost(post); // keep full post in memory
+  };
+
+  const handleDelete = async (id) => {
+    await apiDeletePost(id);
+    setIndex(prev => prev.filter(p=>p.id!==id));
+    if (activeId===id) { setActivePost(null); setActiveId(null); }
+  };
+
+  const handleLogin  = (token) => { setIsAdmin(true); try{localStorage.setItem("nb_auth","true");localStorage.setItem("nb_token",token);}catch{} setShowLogin(false); };
+  const handleLogout = ()      => { setIsAdmin(false); try{localStorage.removeItem("nb_auth");localStorage.removeItem("nb_token");}catch{}; };
+
+  const visibleIndex = index.filter(p=>isAdmin?true:p.status==="public");
+  const visible = visibleIndex.filter(p=>{
     if(filterTopic!=="All"&&!(p.topics||[]).includes(filterTopic))return false;
     if(filterRegion!=="All"&&!(p.regions||[]).includes(filterRegion))return false;
     if(isAdmin&&filterStatus!=="All"&&p.status!==filterStatus)return false;
     if(search&&!p.title.toLowerCase().includes(search.toLowerCase())&&!p.summary?.toLowerCase().includes(search.toLowerCase()))return false;
     return true;
   });
-  const pub=posts.filter(p=>p.status==="public").length;
+  const pub = index.filter(p=>p.status==="public").length;
 
   const sidebar=(
     <Sidebar isOpen={sidebarOpen} onClose={()=>setSidebarOpen(false)} isAdmin={isAdmin}
       onLogin={()=>{setSidebarOpen(false);setShowLogin(true);}}
       onLogout={()=>{handleLogout();setSidebarOpen(false);}}
-      onNewArticle={()=>{setActiveId(null);setView("new");}}/>
+      onNewArticle={()=>{setActivePost(null);setActiveId(null);setView("new");}}/>
   );
 
   const Header=()=>(
@@ -522,11 +567,12 @@ export default function App() {
           </button>
           <div style={{display:"flex",alignItems:"baseline",gap:12}}>
             <span onClick={()=>setView("home")} style={{fontSize:21,fontWeight:800,fontFamily:"Georgia,serif",color:"#111",letterSpacing:"-0.5px",cursor:"pointer"}}>The Notebook</span>
-            <span style={{fontSize:12,color:"#bbb"}}>{isAdmin?`${pub} public · ${posts.length-pub} private`:`${pub} article${pub!==1?"s":""}`}</span>
+            <span style={{fontSize:12,color:"#bbb"}}>{isAdmin?`${pub} public · ${index.length-pub} private`:`${pub} article${pub!==1?"s":""}`}</span>
           </div>
         </div>
         {isAdmin&&(
-          <button onClick={()=>{setActiveId(null);setView("new");}} style={{display:"flex",alignItems:"center",gap:7,background:"#111",color:"#fff",border:"none",borderRadius:9,padding:"8px 18px",cursor:"pointer",fontSize:13,fontWeight:600}}>
+          <button onClick={()=>{setActivePost(null);setActiveId(null);setView("new");}}
+            style={{display:"flex",alignItems:"center",gap:7,background:"#111",color:"#fff",border:"none",borderRadius:9,padding:"8px 18px",cursor:"pointer",fontSize:13,fontWeight:600}}>
             <PlusIcon/> New Article
           </button>
         )}
@@ -540,7 +586,15 @@ export default function App() {
     <div style={{minHeight:"100vh",width:"100%",background:"#faf9f7",display:"flex",flexDirection:"column"}}>
       {sidebar}{showLogin&&<LoginModal onLogin={handleLogin} onClose={()=>setShowLogin(false)}/>}
       <Header/>
-      <div style={{flex:1,padding:"36px 48px"}}><Reader post={activePost} onBack={()=>setView("home")} onEdit={()=>setView("edit")} isAdmin={isAdmin}/></div>
+      <div style={{flex:1,padding:"36px 48px"}}>
+        {postLoading ? (
+          <div style={{textAlign:"center",padding:"80px 0",color:"#aaa",fontFamily:"Georgia,serif",fontSize:14}}>Loading article…</div>
+        ) : activePost ? (
+          <Reader post={activePost} onBack={()=>setView("home")} onEdit={()=>setView("edit")} isAdmin={isAdmin}/>
+        ) : (
+          <div style={{textAlign:"center",padding:"80px 0",color:"#aaa",fontSize:14}}>Article not found.</div>
+        )}
+      </div>
       <Footer/>
     </div>
   );
@@ -548,7 +602,10 @@ export default function App() {
   if(view==="edit"||view==="new") return (
     <div style={{minHeight:"100vh",width:"100%",background:"#faf9f7"}}>
       {sidebar}<Header/>
-      <Editor post={view==="new"?{}:activePost} onSave={p=>{handleSave(p);setActiveId(p.id);setView("read");}} onBack={()=>setView(activeId?"read":"home")}/>
+      <Editor
+        post={view==="new"?{}:(activePost||{})}
+        onSave={async p=>{ await handleSave(p); setActiveId(p.id); setView("read"); }}
+        onBack={()=>setView(activeId?"read":"home")}/>
     </div>
   );
 
@@ -563,7 +620,7 @@ export default function App() {
           <div style={{textAlign:"center",padding:"90px 0"}}><div style={{fontSize:17,fontWeight:600,color:"#aaa",marginBottom:6}}>New articles coming soon!</div></div>
         ):(
           <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(340px,1fr))",gap:20}}>
-            {visible.map(p=><Card key={p.id} post={p} onClick={()=>{setActiveId(p.id);setView("read");}} onDelete={handleDelete} isAdmin={isAdmin}/>)}
+            {visible.map(p=><Card key={p.id} post={p} onClick={()=>openPost(p.id)} onDelete={handleDelete} isAdmin={isAdmin}/>)}
           </div>
         )}
       </main>
