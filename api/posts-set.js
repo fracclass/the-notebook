@@ -9,13 +9,15 @@ function safeParse(raw) {
   return val;
 }
 
+// Upstash REST API: SET expects body = JSON.stringify([value_as_string])
+// where value_as_string is already JSON.stringify(yourObject)
+// Result stored in Redis: a plain JSON string, readable with JSON.parse(d.result)
 async function upstashSet(url, token, key, value) {
-  const res = await fetch(`${url}/set/${key}`, {
+  await fetch(`${url}/set/${key}`, {
     method: "POST",
     headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
     body: JSON.stringify([JSON.stringify(value)])
   });
-  return res.ok;
 }
 
 async function upstashGet(url, token, key) {
@@ -23,7 +25,7 @@ async function upstashGet(url, token, key) {
     headers: { Authorization: `Bearer ${token}` }
   });
   const d = await r.json();
-  return d.result ?? null;
+  return d.result ?? null; // d.result is already a plain string — just JSON.parse it
 }
 
 export default async function handler(req, res) {
@@ -36,22 +38,25 @@ export default async function handler(req, res) {
   const token = process.env.UPSTASH_REDIS_REST_TOKEN;
 
   try {
-    // 1. Save full article (single object, no array wrapping)
+    // 1. Save full article
     await upstashSet(url, token, `nb_post:${post.id}`, post);
 
-    // 2. Update index with lightweight metadata only
+    // 2. Update index — lightweight metadata only (no body, no sources)
     const { body, sources, ...meta } = post;
-
     const indexRaw = await upstashGet(url, token, "nb_index");
     let index = safeParse(indexRaw);
 
-    // Rebuild clean index if corrupted
-    if (!Array.isArray(index) || (index.length > 0 && !index[0]?.id)) {
+    // If index is missing or corrupted, start fresh
+    if (!Array.isArray(index) || (index.length > 0 && typeof index[0] !== "object")) {
       index = [];
     }
 
-    const i = index.findIndex(p => p.id === post.id);
-    if (i >= 0) { index[i] = meta; } else { index = [meta, ...index]; }
+    const existing = index.findIndex(p => p.id === post.id);
+    if (existing >= 0) {
+      index[existing] = meta;
+    } else {
+      index = [meta, ...index];
+    }
 
     await upstashSet(url, token, "nb_index", index);
 

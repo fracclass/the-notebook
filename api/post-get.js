@@ -1,4 +1,4 @@
-// Fetches a single full article by id
+// Returns a single full article by id
 
 function safeParse(raw) {
   let val = raw;
@@ -21,11 +21,12 @@ export default async function handler(req, res) {
       headers: { Authorization: `Bearer ${token}` }
     });
     const d = await r.json();
-    const post = safeParse(d.result);
+    let post = safeParse(d.result);
 
-    // post might be an array (old bug) — unwrap it
-    const result = Array.isArray(post) ? post[0] : post;
-    return res.status(200).json({ post: result || null });
+    // If it came back as an array (old bug), unwrap it
+    if (Array.isArray(post)) post = post[0];
+
+    return res.status(200).json({ post: post || null });
   } catch (e) {
     return res.status(200).json({ post: null });
   }

@@ -1,4 +1,4 @@
-// Deletes a single article — removes from nb_index and deletes nb_post:{id}
+// Deletes an article: removes from nb_index and deletes nb_post:{id}
 
 function safeParse(raw) {
   let val = raw;
@@ -19,10 +19,8 @@ export default async function handler(req, res) {
   const token = process.env.UPSTASH_REDIS_REST_TOKEN;
 
   try {
-    // 1. Remove from index
-    const r = await fetch(`${url}/get/nb_index`, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
+    // Remove from index
+    const r = await fetch(`${url}/get/nb_index`, { headers: { Authorization: `Bearer ${token}` } });
     const d = await r.json();
     let index = safeParse(d.result);
     if (Array.isArray(index)) {
@@ -34,12 +32,8 @@ export default async function handler(req, res) {
       });
     }
 
-    // 2. Delete individual post key
-    await fetch(`${url}/del/nb_post:${id}`, {
-      method: "POST",
-      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-      body: JSON.stringify(["DEL", `nb_post:${id}`])
-    });
+    // Delete individual post key
+    await fetch(`${url}/del/nb_post:${id}`, { headers: { Authorization: `Bearer ${token}` } });
 
     return res.status(200).json({ ok: true });
   } catch (e) {
