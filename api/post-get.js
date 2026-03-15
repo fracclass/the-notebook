@@ -1,11 +1,10 @@
-// Fetches a single full article (including body and sources) by id.
+// Fetches a single full article by id
 
-function deepParse(raw) {
+function safeParse(raw) {
   let val = raw;
-  let i = 0;
-  while (typeof val === "string" && i < 20) {
+  for (let i = 0; i < 20; i++) {
+    if (typeof val !== "string") break;
     try { val = JSON.parse(val); } catch { break; }
-    i++;
   }
   return val;
 }
@@ -22,8 +21,11 @@ export default async function handler(req, res) {
       headers: { Authorization: `Bearer ${token}` }
     });
     const d = await r.json();
-    const post = deepParse(d.result);
-    return res.status(200).json({ post: post || null });
+    const post = safeParse(d.result);
+
+    // post might be an array (old bug) — unwrap it
+    const result = Array.isArray(post) ? post[0] : post;
+    return res.status(200).json({ post: result || null });
   } catch (e) {
     return res.status(200).json({ post: null });
   }
