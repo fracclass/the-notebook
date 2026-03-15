@@ -1,7 +1,9 @@
-import { useState, useRef, useEffect } from "react";
-import { THEME, TOPIC_COLORS, REGION_COLORS } from "./theme";
+import { useState, useRef, useEffect, createContext, useContext } from "react";
+import { LIGHT, DARK, TRANSLATIONS, TOPIC_COLORS, REGION_COLORS } from "./theme";
 
-const T = THEME.color;
+const ThemeCtx = createContext(LIGHT);
+const LangCtx  = createContext(k => k);
+
 const TOPICS  = ["Energy","Technology","Markets","Consumer Trends","Environment","Deep Dive","Other"];
 const REGIONS = ["Africa","Americas","Asia-Pacific","Europe","Middle East","Global"];
 
@@ -9,7 +11,7 @@ const now = () => new Date().toISOString();
 const fmt = (iso) => new Date(iso).toLocaleDateString("en-US",{year:"numeric",month:"long",day:"numeric"});
 const readingTime = (html) => {
   const words = (html||"").replace(/<[^>]+>/g,"").trim().split(/\s+/).filter(Boolean).length;
-  return `${Math.max(1,Math.round(words/200))} min read`;
+  return Math.max(1,Math.round(words/200));
 };
 
 const SAMPLE = [
@@ -17,23 +19,26 @@ const SAMPLE = [
   {id:"2",title:"Why Nearshoring Hasn't Delivered — Yet",topics:["Markets","Deep Dive"],regions:["Americas"],status:"private",author:"Franz-Frederick Acclassato",summary:"The reshoring narrative captured boardrooms, but output data tells a more complicated story.",body:`<p>Since 2022, "friend-shoring" and "nearshoring" have become near-mandatory vocabulary in earnings calls.</p><p>The capex data supports the narrative in aggregate — greenfield FDI into Mexico hit a record in 2023. But the output numbers are lagging.</p><h3>The realistic timeline</h3><p>Expect the output inflection to appear in trade data around 2026–2027.</p>`,sources:[{label:"Banco de México FDI Statistics",url:"https://www.banxico.org.mx"}],createdAt:"2025-12-18T14:30:00Z",updatedAt:"2025-12-18T14:30:00Z"}
 ];
 
-const GlobeIcon  = () => <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>;
-const LockIcon   = () => <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>;
-const PlusIcon   = () => <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>;
-const BackIcon   = () => <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>;
-const TrashIcon  = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6M9 6V4h6v2"/></svg>;
-const SaveIcon   = () => <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>;
-const PenIcon    = () => <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>;
-const LinkIcon   = () => <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>;
-const LoginIcon  = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>;
-const LogoutIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>;
-const ImageIcon  = () => <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>;
-const MailIcon   = () => <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>;
-const InfoIcon   = () => <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>;
-const XIcon      = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>;
-const HamburgerIcon = () => <svg width="22" height="16" viewBox="0 0 22 16" fill="none"><line x1="0" y1="1" x2="22" y2="1" stroke="#b5522b" strokeWidth="2" strokeLinecap="round"/><line x1="0" y1="8" x2="22" y2="8" stroke="#b5522b" strokeWidth="2" strokeLinecap="round"/><line x1="0" y1="15" x2="22" y2="15" stroke="#b5522b" strokeWidth="2" strokeLinecap="round"/></svg>;
+const GlobeIcon   = () => <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>;
+const LockIcon    = () => <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>;
+const PlusIcon    = () => <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>;
+const BackIcon    = () => <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>;
+const TrashIcon   = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6M9 6V4h6v2"/></svg>;
+const SaveIcon    = () => <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>;
+const PenIcon     = () => <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>;
+const LinkIcon    = () => <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>;
+const LoginIcon   = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>;
+const LogoutIcon  = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>;
+const ImageIcon   = () => <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>;
+const MailIcon    = () => <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>;
+const InfoIcon    = () => <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>;
+const XIcon       = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>;
+const HamburgerIcon = ({color}) => <svg width="22" height="16" viewBox="0 0 22 16" fill="none"><line x1="0" y1="1" x2="22" y2="1" stroke={color} strokeWidth="2" strokeLinecap="round"/><line x1="0" y1="8" x2="22" y2="8" stroke={color} strokeWidth="2" strokeLinecap="round"/><line x1="0" y1="15" x2="22" y2="15" stroke={color} strokeWidth="2" strokeLinecap="round"/></svg>;
+const LangIcon    = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>;
+const MoonIcon    = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>;
+const SunIcon     = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>;
 
-// ── API — simple single key, clean read/write ──────────────────────────────────
+// ── API ────────────────────────────────────────────────────────────────────────
 async function apiGetPosts() {
   try {
     const r = await fetch("/api/posts-get");
@@ -41,17 +46,15 @@ async function apiGetPosts() {
     return d.posts || null;
   } catch { return null; }
 }
-
 async function apiSetPosts(posts) {
   try {
     await fetch("/api/posts-set", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ posts })  // sends the plain array — posts-set.js handles stringifying
+      body: JSON.stringify({ posts })
     });
   } catch {}
 }
-
 async function apiDeletePost(id) {
   try {
     await fetch("/api/posts-delete", {
@@ -82,7 +85,10 @@ function updateOGTags({ title, description, image } = {}) {
   setMeta("twitter:card", "summary_large_image"); setMeta("twitter:title", t); setMeta("twitter:description", d);
 }
 
+// ── Sidebar ───────────────────────────────────────────────────────────────────
 function Sidebar({ isOpen, onClose, isAdmin, onLogin, onLogout, onNewArticle }) {
+  const C = useContext(ThemeCtx);
+  const t = useContext(LangCtx);
   const [panel, setPanel] = useState(null);
   const [cName,setCName]=useState(""); const [cEmail,setCEmail]=useState("");
   const [cSubject,setCSubject]=useState(""); const [cMessage,setCMessage]=useState("");
@@ -96,111 +102,118 @@ function Sidebar({ isOpen, onClose, isAdmin, onLogin, onLogout, onNewArticle }) 
   };
 
   const navBtn=(label,icon,onClick,active)=>(
-    <button onClick={onClick} style={{display:"flex",alignItems:"center",gap:12,width:"100%",padding:"11px 16px",background:active?"#f5ede9":"transparent",border:"none",borderRadius:8,cursor:"pointer",fontSize:14,fontWeight:600,color:active?"#b5522b":"#555",textAlign:"left",transition:"all .15s"}}>
-      <span style={{color:active?"#b5522b":"#999"}}>{icon}</span>{label}
+    <button onClick={onClick} style={{display:"flex",alignItems:"center",gap:12,width:"100%",padding:"11px 16px",background:active?C.accentLight:"transparent",border:"none",borderRadius:8,cursor:"pointer",fontSize:14,fontWeight:600,color:active?C.accent:C.textSecondary,textAlign:"left",transition:"all .15s"}}>
+      <span style={{color:active?C.accent:C.textMuted}}>{icon}</span>{label}
     </button>
   );
 
   return (
     <>
       {isOpen&&<div onClick={onClose} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.35)",zIndex:200}}/>}
-      <div style={{position:"fixed",top:0,left:0,height:"100vh",width:300,background:"#fff",zIndex:201,boxShadow:isOpen?"4px 0 24px rgba(0,0,0,.08)":"none",transform:isOpen?"translateX(0)":"translateX(-100%)",transition:"transform .25s cubic-bezier(.4,0,.2,1)",display:"flex",flexDirection:"column",overflow:"hidden"}}>
-        <div style={{padding:"20px 20px 16px",borderBottom:"1px solid #ebebeb",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-          <span style={{fontFamily:"Georgia,serif",fontWeight:800,fontSize:18,color:"#111",letterSpacing:"-0.3px"}}>The Notebook</span>
-          <button onClick={onClose} style={{background:"none",border:"none",cursor:"pointer",color:"#bbb",padding:4,display:"flex"}}><XIcon/></button>
+      <div style={{position:"fixed",top:0,left:0,height:"100vh",width:300,background:C.white,zIndex:201,boxShadow:isOpen?"4px 0 24px rgba(0,0,0,.08)":"none",transform:isOpen?"translateX(0)":"translateX(-100%)",transition:"transform .25s cubic-bezier(.4,0,.2,1)",display:"flex",flexDirection:"column",overflow:"hidden"}}>
+        <div style={{padding:"20px 20px 16px",borderBottom:`1px solid ${C.border}`,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+          <span style={{fontFamily:"Georgia,serif",fontWeight:800,fontSize:18,color:C.textPrimary,letterSpacing:"-0.3px"}}>{t('siteTitle')}</span>
+          <button onClick={onClose} style={{background:"none",border:"none",cursor:"pointer",color:C.textFaint,padding:4,display:"flex"}}><XIcon/></button>
         </div>
         <nav style={{padding:"12px 12px 0",flex:1,overflowY:"auto"}}>
           {isAdmin&&<>
-            <div style={{fontSize:10,fontWeight:700,letterSpacing:1.2,textTransform:"uppercase",color:"#bbb",padding:"8px 16px 4px"}}>Admin</div>
-            {navBtn("New Article",<PlusIcon/>,()=>{onNewArticle();onClose();},false)}
-            {navBtn("Logout",<LogoutIcon/>,()=>{onLogout();onClose();},false)}
+            <div style={{fontSize:10,fontWeight:700,letterSpacing:1.2,textTransform:"uppercase",color:C.textFaint,padding:"8px 16px 4px"}}>{t('adminSection')}</div>
+            {navBtn(t('newArticle'),<PlusIcon/>,()=>{onNewArticle();onClose();},false)}
+            {navBtn(t('logout'),<LogoutIcon/>,()=>{onLogout();onClose();},false)}
           </>}
-          {!isAdmin&&navBtn("Login",<LoginIcon/>,()=>{onLogin();onClose();},false)}
-          <div style={{height:1,background:"#ebebeb",margin:"12px 0"}}/>
-          <div style={{fontSize:10,fontWeight:700,letterSpacing:1.2,textTransform:"uppercase",color:"#bbb",padding:"8px 16px 4px"}}>Publication</div>
-          {navBtn("About",<InfoIcon/>,()=>setPanel(panel==="about"?null:"about"),panel==="about")}
-          {navBtn("Contact",<MailIcon/>,()=>setPanel(panel==="contact"?null:"contact"),panel==="contact")}
+          {!isAdmin&&navBtn(t('login'),<LoginIcon/>,()=>{onLogin();onClose();},false)}
+          <div style={{height:1,background:C.border,margin:"12px 0"}}/>
+          <div style={{fontSize:10,fontWeight:700,letterSpacing:1.2,textTransform:"uppercase",color:C.textFaint,padding:"8px 16px 4px"}}>{t('publicationSection')}</div>
+          {navBtn(t('about'),<InfoIcon/>,()=>setPanel(panel==="about"?null:"about"),panel==="about")}
+          {navBtn(t('contact'),<MailIcon/>,()=>setPanel(panel==="contact"?null:"contact"),panel==="contact")}
         </nav>
         {panel==="about"&&(
-          <div style={{padding:"20px",borderTop:"1px solid #ebebeb",background:"#faf9f7",fontSize:13,lineHeight:1.8,color:"#555"}}>
-            <div style={{fontWeight:700,color:"#111",marginBottom:10,fontSize:14}}>About The Notebook</div>
-            <p style={{margin:"0 0 10px"}}>The Notebook is an independent analysis publication. We write about the forces shaping economies, industries, and markets : from the energy transition to the technology shifts transforming the world as we know it.</p>
-            <p style={{margin:0}}>Through latest research, expert insight, data, and the news, cross-referenced against what matters most: the people driving these changes and those living them. We deliver a straightforward analysis to educate ourselves, and share it plainly.</p>
+          <div style={{padding:"20px",borderTop:`1px solid ${C.border}`,background:C.offWhite,fontSize:13,lineHeight:1.8,color:C.textSecondary}}>
+            <div style={{fontWeight:700,color:C.textPrimary,marginBottom:10,fontSize:14}}>{t('aboutHeading')}</div>
+            <p style={{margin:"0 0 10px"}}>{t('aboutP1')}</p>
+            <p style={{margin:0}}>{t('aboutP2')}</p>
           </div>
         )}
         {panel==="contact"&&(
-          <div style={{padding:"20px",borderTop:"1px solid #ebebeb",background:"#faf9f7"}}>
-            <div style={{fontWeight:700,color:"#111",marginBottom:14,fontSize:14}}>Get in touch</div>
-            {cSent?<div style={{textAlign:"center",padding:"20px 0",color:"#b5522b",fontWeight:600,fontSize:14}}>✓ Message sent — thank you!</div>:(
+          <div style={{padding:"20px",borderTop:`1px solid ${C.border}`,background:C.offWhite}}>
+            <div style={{fontWeight:700,color:C.textPrimary,marginBottom:14,fontSize:14}}>{t('contactHeading')}</div>
+            {cSent?<div style={{textAlign:"center",padding:"20px 0",color:C.accent,fontWeight:600,fontSize:14}}>{t('contactSent')}</div>:(
               <>
-                {[["Name",cName,setCName,"Your name","text"],["Email",cEmail,setCEmail,"your@email.com","email"],["Subject",cSubject,setCSubject,"What's this about?","text"]].map(([l,v,s,p,t])=>(
+                {[[t('fieldName'),cName,setCName,t('placeholderName'),"text"],[t('fieldEmail'),cEmail,setCEmail,t('placeholderEmail'),"email"],[t('fieldSubject'),cSubject,setCSubject,t('placeholderSubject'),"text"]].map(([l,v,s,p,tp])=>(
                   <div key={l} style={{marginBottom:10}}>
-                    <div style={{fontSize:11,fontWeight:700,color:"#999",marginBottom:4}}>{l}</div>
-                    <input type={t} value={v} onChange={e=>s(e.target.value)} placeholder={p} style={{width:"100%",boxSizing:"border-box",padding:"8px 10px",border:"1px solid #ebebeb",borderRadius:6,fontSize:13,outline:"none",background:"#fff",color:"#111"}}/>
+                    <div style={{fontSize:11,fontWeight:700,color:C.textMuted,marginBottom:4}}>{l}</div>
+                    <input type={tp} value={v} onChange={e=>s(e.target.value)} placeholder={p} style={{width:"100%",boxSizing:"border-box",padding:"8px 10px",border:`1px solid ${C.border}`,borderRadius:6,fontSize:13,outline:"none",background:C.inputBg,color:C.textPrimary}}/>
                   </div>
                 ))}
                 <div style={{marginBottom:12}}>
-                  <div style={{fontSize:11,fontWeight:700,color:"#999",marginBottom:4}}>Message</div>
-                  <textarea value={cMessage} onChange={e=>setCMessage(e.target.value)} placeholder="Your message…" rows={4} style={{width:"100%",boxSizing:"border-box",padding:"8px 10px",border:"1px solid #ebebeb",borderRadius:6,fontSize:13,outline:"none",resize:"vertical",background:"#fff",color:"#111",lineHeight:1.5}}/>
+                  <div style={{fontSize:11,fontWeight:700,color:C.textMuted,marginBottom:4}}>{t('fieldMessage')}</div>
+                  <textarea value={cMessage} onChange={e=>setCMessage(e.target.value)} placeholder={t('placeholderMessage')} rows={4} style={{width:"100%",boxSizing:"border-box",padding:"8px 10px",border:`1px solid ${C.border}`,borderRadius:6,fontSize:13,outline:"none",resize:"vertical",background:C.inputBg,color:C.textPrimary,lineHeight:1.5}}/>
                 </div>
-                <button onClick={sendContact} style={{width:"100%",padding:"10px",background:"#b5522b",color:"#fff",border:"none",borderRadius:7,fontSize:13,fontWeight:700,cursor:"pointer"}}>Send Message</button>
+                <button onClick={sendContact} style={{width:"100%",padding:"10px",background:C.accent,color:"#fff",border:"none",borderRadius:7,fontSize:13,fontWeight:700,cursor:"pointer"}}>{t('sendMessage')}</button>
               </>
             )}
           </div>
         )}
-        <div style={{padding:"14px 20px",borderTop:"1px solid #ebebeb",fontSize:11,color:"#bbb"}}>© {new Date().getFullYear()} The Notebook</div>
+        <div style={{padding:"14px 20px",borderTop:`1px solid ${C.border}`,fontSize:11,color:C.textFaint}}>© {new Date().getFullYear()} The Notebook</div>
       </div>
     </>
   );
 }
 
+// ── Login Modal ───────────────────────────────────────────────────────────────
 function LoginModal({ onLogin, onClose }) {
+  const C = useContext(ThemeCtx);
+  const t = useContext(LangCtx);
   const [pw,setPw]=useState(""); const [err,setErr]=useState(""); const [loading,setLoading]=useState(false);
   const attempt=async()=>{
     if(!pw.trim())return; setLoading(true); setErr("");
     try {
       if(window.location.hostname==="localhost"){
-        if(pw==="localtest")onLogin("local-token"); else{setErr("Incorrect password");setPw("");}
+        if(pw==="localtest")onLogin("local-token"); else{setErr(t('incorrectPassword'));setPw("");}
         setLoading(false); return;
       }
       const r=await fetch("/api/login",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({password:pw})});
       const d=await r.json();
-      if(d.success)onLogin(d.token); else{setErr("Incorrect password");setPw("");}
-    } catch{setErr("Connection error");}
+      if(d.success)onLogin(d.token); else{setErr(t('incorrectPassword'));setPw("");}
+    } catch{setErr(t('connectionError'));}
     setLoading(false);
   };
   return (
     <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.5)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:300}}>
-      <div style={{background:"#fff",borderRadius:18,padding:"44px 48px",width:380,boxShadow:"0 24px 64px rgba(0,0,0,.2)"}}>
+      <div style={{background:C.white,borderRadius:18,padding:"44px 48px",width:380,boxShadow:"0 24px 64px rgba(0,0,0,.2)"}}>
         <div style={{textAlign:"center",marginBottom:32}}>
-          <div style={{width:52,height:52,background:"#111",borderRadius:14,display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 18px",color:"#fff"}}><LoginIcon/></div>
-          <h2 style={{fontSize:21,fontWeight:700,margin:"0 0 6px",color:"#111"}}>Admin Login</h2>
-          <p style={{fontSize:14,color:"#999",margin:0}}>Private articles are password protected</p>
+          <div style={{width:52,height:52,background:C.textPrimary,borderRadius:14,display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 18px",color:C.offWhite}}><LoginIcon/></div>
+          <h2 style={{fontSize:21,fontWeight:700,margin:"0 0 6px",color:C.textPrimary}}>{t('adminLogin')}</h2>
+          <p style={{fontSize:14,color:C.textMuted,margin:0}}>{t('loginSubtext')}</p>
         </div>
-        <input type="password" value={pw} onChange={e=>setPw(e.target.value)} onKeyDown={e=>e.key==="Enter"&&attempt()} placeholder="Enter password" autoFocus
-          style={{width:"100%",boxSizing:"border-box",padding:"12px 14px",border:`1px solid ${err?"#e53e3e":"#e0e0e0"}`,borderRadius:9,fontSize:15,marginBottom:err?6:14,outline:"none"}}/>
+        <input type="password" value={pw} onChange={e=>setPw(e.target.value)} onKeyDown={e=>e.key==="Enter"&&attempt()} placeholder={t('enterPassword')} autoFocus
+          style={{width:"100%",boxSizing:"border-box",padding:"12px 14px",border:`1px solid ${err?"#e53e3e":C.inputBorder}`,borderRadius:9,fontSize:15,marginBottom:err?6:14,outline:"none",background:C.inputBg,color:C.textPrimary}}/>
         {err&&<p style={{color:"#e53e3e",fontSize:13,margin:"0 0 12px"}}>{err}</p>}
-        <button onClick={attempt} disabled={loading} style={{width:"100%",padding:"12px",background:"#111",color:"#fff",border:"none",borderRadius:9,fontSize:15,fontWeight:600,cursor:loading?"not-allowed":"pointer",opacity:loading?0.7:1,marginBottom:10}}>{loading?"Checking…":"Login"}</button>
-        <button onClick={onClose} style={{width:"100%",padding:"11px",background:"none",color:"#999",border:"1px solid #eee",borderRadius:9,fontSize:14,cursor:"pointer"}}>Cancel</button>
+        <button onClick={attempt} disabled={loading} style={{width:"100%",padding:"12px",background:C.textPrimary,color:C.offWhite,border:"none",borderRadius:9,fontSize:15,fontWeight:600,cursor:loading?"not-allowed":"pointer",opacity:loading?0.7:1,marginBottom:10}}>{loading?t('checking'):t('login')}</button>
+        <button onClick={onClose} style={{width:"100%",padding:"11px",background:"none",color:C.textMuted,border:`1px solid ${C.border}`,borderRadius:9,fontSize:14,cursor:"pointer"}}>{t('cancel')}</button>
       </div>
     </div>
   );
 }
 
+// ── MultiPicker ───────────────────────────────────────────────────────────────
 function MultiPicker({ label, options, colors, selected, onChange }) {
+  const C = useContext(ThemeCtx);
   return (
     <div style={{marginBottom:16}}>
-      <div style={{fontSize:11,fontWeight:700,letterSpacing:1.1,textTransform:"uppercase",color:"#bbb",marginBottom:8}}>{label}</div>
+      <div style={{fontSize:11,fontWeight:700,letterSpacing:1.1,textTransform:"uppercase",color:C.textFaint,marginBottom:8}}>{label}</div>
       <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
-        {options.map(opt=>{const a=selected.includes(opt),c=colors[opt]||"#555";return(
-          <button key={opt} onClick={()=>onChange(a?selected.filter(s=>s!==opt):[...selected,opt])} style={{padding:"5px 13px",borderRadius:20,border:`1px solid ${a?c:"#ddd"}`,fontSize:12,cursor:"pointer",fontWeight:600,background:a?c:"#fff",color:a?"#fff":c,transition:"all .15s"}}>{opt}</button>
+        {options.map(opt=>{const a=selected.includes(opt),c=colors[opt]||C.textSecondary;return(
+          <button key={opt} onClick={()=>onChange(a?selected.filter(s=>s!==opt):[...selected,opt])} style={{padding:"5px 13px",borderRadius:20,border:`1px solid ${a?c:C.filterBorder}`,fontSize:12,cursor:"pointer",fontWeight:600,background:a?c:C.filterBg,color:a?"#fff":c,transition:"all .15s"}}>{opt}</button>
         );})}
       </div>
     </div>
   );
 }
 
+// ── Rich Editor ───────────────────────────────────────────────────────────────
 function RichEditor({ value, onChange }) {
+  const C = useContext(ThemeCtx);
   const ref=useRef(null); const imgInput=useRef(null);
   useEffect(()=>{ if(ref.current) ref.current.innerHTML=value||"<p><br></p>"; },[]);
   const exec=(cmd,val)=>{ ref.current?.focus(); document.execCommand(cmd,false,val); onChange(ref.current?.innerHTML||""); };
@@ -211,75 +224,81 @@ function RichEditor({ value, onChange }) {
     reader.readAsDataURL(file); e.target.value="";
   };
   return (
-    <div style={{border:"1px solid #e0e0e0",borderRadius:10,overflow:"hidden",background:"#fff"}}>
-      <div style={{display:"flex",gap:3,padding:"8px 12px",background:"#f7f7f5",borderBottom:"1px solid #eee",flexWrap:"wrap",alignItems:"center"}}>
+    <div style={{border:`1px solid ${C.editorBorderStrong}`,borderRadius:10,overflow:"hidden",background:C.white}}>
+      <div style={{display:"flex",gap:3,padding:"8px 12px",background:C.toolbarBg,borderBottom:`1px solid ${C.toolbarBorder}`,flexWrap:"wrap",alignItems:"center"}}>
         {[["bold","B"],["italic","I"],["underline","U"]].map(([cmd,lbl])=>(
-          <button key={cmd} onMouseDown={e=>{e.preventDefault();exec(cmd);}} style={{fontWeight:cmd==="bold"?"bold":"normal",fontStyle:cmd==="italic"?"italic":"normal",textDecoration:cmd==="underline"?"underline":"none",background:"#fff",border:"1px solid #ddd",borderRadius:5,padding:"2px 9px",cursor:"pointer",fontSize:13,color:"#333"}}>{lbl}</button>
+          <button key={cmd} onMouseDown={e=>{e.preventDefault();exec(cmd);}} style={{fontWeight:cmd==="bold"?"bold":"normal",fontStyle:cmd==="italic"?"italic":"normal",textDecoration:cmd==="underline"?"underline":"none",background:C.toolbarBtn,border:`1px solid ${C.toolbarBtnBorder}`,borderRadius:5,padding:"2px 9px",cursor:"pointer",fontSize:13,color:C.toolbarBtnText}}>{lbl}</button>
         ))}
-        <div style={{width:1,background:"#ddd",height:18,margin:"0 4px"}}/>
+        <div style={{width:1,background:C.toolbarBtnBorder,height:18,margin:"0 4px"}}/>
         {[["H2","formatBlock","h2"],["H3","formatBlock","h3"],["P","formatBlock","p"]].map(([lbl,cmd,val])=>(
-          <button key={lbl} onMouseDown={e=>{e.preventDefault();exec(cmd,val);}} style={{background:"#fff",border:"1px solid #ddd",borderRadius:5,padding:"2px 9px",cursor:"pointer",fontSize:12,color:"#333"}}>{lbl}</button>
+          <button key={lbl} onMouseDown={e=>{e.preventDefault();exec(cmd,val);}} style={{background:C.toolbarBtn,border:`1px solid ${C.toolbarBtnBorder}`,borderRadius:5,padding:"2px 9px",cursor:"pointer",fontSize:12,color:C.toolbarBtnText}}>{lbl}</button>
         ))}
-        <div style={{width:1,background:"#ddd",height:18,margin:"0 4px"}}/>
-        <button onMouseDown={e=>{e.preventDefault();exec("insertUnorderedList");}} style={{background:"#fff",border:"1px solid #ddd",borderRadius:5,padding:"2px 9px",cursor:"pointer",fontSize:12,color:"#333"}}>• List</button>
-        <button onMouseDown={e=>{e.preventDefault();exec("formatBlock","blockquote");}} style={{background:"#fff",border:"1px solid #ddd",borderRadius:5,padding:"2px 9px",cursor:"pointer",fontSize:12,color:"#333"}}>" Quote</button>
-        <button onMouseDown={e=>{e.preventDefault();const u=prompt("URL:");if(u)exec("createLink",u);}} style={{display:"flex",alignItems:"center",gap:4,background:"#fff",border:"1px solid #ddd",borderRadius:5,padding:"2px 9px",cursor:"pointer",fontSize:12,color:"#333"}}><LinkIcon/> Link</button>
-        <div style={{width:1,background:"#ddd",height:18,margin:"0 4px"}}/>
-        <button onMouseDown={e=>{e.preventDefault();imgInput.current?.click();}} style={{display:"flex",alignItems:"center",gap:4,background:"#fff",border:"1px solid #ddd",borderRadius:5,padding:"2px 9px",cursor:"pointer",fontSize:12,color:"#333"}}><ImageIcon/> Image</button>
+        <div style={{width:1,background:C.toolbarBtnBorder,height:18,margin:"0 4px"}}/>
+        <button onMouseDown={e=>{e.preventDefault();exec("insertUnorderedList");}} style={{background:C.toolbarBtn,border:`1px solid ${C.toolbarBtnBorder}`,borderRadius:5,padding:"2px 9px",cursor:"pointer",fontSize:12,color:C.toolbarBtnText}}>• List</button>
+        <button onMouseDown={e=>{e.preventDefault();exec("formatBlock","blockquote");}} style={{background:C.toolbarBtn,border:`1px solid ${C.toolbarBtnBorder}`,borderRadius:5,padding:"2px 9px",cursor:"pointer",fontSize:12,color:C.toolbarBtnText}}>" Quote</button>
+        <button onMouseDown={e=>{e.preventDefault();const u=prompt("URL:");if(u)exec("createLink",u);}} style={{display:"flex",alignItems:"center",gap:4,background:C.toolbarBtn,border:`1px solid ${C.toolbarBtnBorder}`,borderRadius:5,padding:"2px 9px",cursor:"pointer",fontSize:12,color:C.toolbarBtnText}}><LinkIcon/> Link</button>
+        <div style={{width:1,background:C.toolbarBtnBorder,height:18,margin:"0 4px"}}/>
+        <button onMouseDown={e=>{e.preventDefault();imgInput.current?.click();}} style={{display:"flex",alignItems:"center",gap:4,background:C.toolbarBtn,border:`1px solid ${C.toolbarBtnBorder}`,borderRadius:5,padding:"2px 9px",cursor:"pointer",fontSize:12,color:C.toolbarBtnText}}><ImageIcon/> Image</button>
         <input ref={imgInput} type="file" accept="image/*" onChange={insertImage} style={{display:"none"}}/>
       </div>
       <div ref={ref} contentEditable suppressContentEditableWarning onInput={e=>onChange(e.currentTarget.innerHTML)}
         onKeyDown={e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();document.execCommand("insertParagraph");}}}
-        style={{minHeight:"calc(100vh - 420px)",padding:"28px 32px",fontSize:17,lineHeight:1.8,color:"#1a1a1a",outline:"none",fontFamily:"Georgia,serif",direction:"ltr",textAlign:"left",unicodeBidi:"embed",writingMode:"horizontal-tb",WebkitWritingMode:"horizontal-tb",wordBreak:"break-word"}}/>
+        style={{minHeight:"calc(100vh - 420px)",padding:"28px 32px",fontSize:17,lineHeight:1.8,color:C.bodyText,outline:"none",fontFamily:"Georgia,serif",direction:"ltr",textAlign:"left",unicodeBidi:"embed",writingMode:"horizontal-tb",WebkitWritingMode:"horizontal-tb",wordBreak:"break-word"}}/>
     </div>
   );
 }
 
+// ── Source Manager ────────────────────────────────────────────────────────────
 function SourceMgr({ sources, onChange }) {
+  const C = useContext(ThemeCtx);
+  const t = useContext(LangCtx);
   const [lbl,setLbl]=useState(""); const [url,setUrl]=useState("");
   return (
     <div>
       <div style={{display:"flex",gap:8,marginBottom:8,flexWrap:"wrap"}}>
-        <input value={lbl} onChange={e=>setLbl(e.target.value)} placeholder="Source name" style={{flex:"1 1 140px",padding:"7px 12px",border:"1px solid #ddd",borderRadius:7,fontSize:13}}/>
-        <input value={url} onChange={e=>setUrl(e.target.value)} placeholder="https://..." style={{flex:"2 1 200px",padding:"7px 12px",border:"1px solid #ddd",borderRadius:7,fontSize:13}}/>
-        <button onClick={()=>{if(!lbl.trim())return;onChange([...sources,{label:lbl.trim(),url:url.trim()}]);setLbl("");setUrl("");}} style={{padding:"7px 16px",background:"#1a1a1a",color:"#fff",border:"none",borderRadius:7,cursor:"pointer",fontSize:13}}>Add</button>
+        <input value={lbl} onChange={e=>setLbl(e.target.value)} placeholder={t('placeholderSourceName')} style={{flex:"1 1 140px",padding:"7px 12px",border:`1px solid ${C.filterBorder}`,borderRadius:7,fontSize:13,background:C.inputBg,color:C.textPrimary,outline:"none"}}/>
+        <input value={url} onChange={e=>setUrl(e.target.value)} placeholder={t('placeholderSourceUrl')} style={{flex:"2 1 200px",padding:"7px 12px",border:`1px solid ${C.filterBorder}`,borderRadius:7,fontSize:13,background:C.inputBg,color:C.textPrimary,outline:"none"}}/>
+        <button onClick={()=>{if(!lbl.trim())return;onChange([...sources,{label:lbl.trim(),url:url.trim()}]);setLbl("");setUrl("");}} style={{padding:"7px 16px",background:C.bodyText,color:C.offWhite,border:"none",borderRadius:7,cursor:"pointer",fontSize:13}}>{t('addSource')}</button>
       </div>
       {sources.map((s,i)=>(
-        <div key={i} style={{display:"flex",alignItems:"center",gap:8,padding:"7px 12px",background:"#f9f9f7",borderRadius:7,marginBottom:5,fontSize:13}}>
-          <LinkIcon/><span style={{flex:1,fontWeight:600}}>{s.label}</span>
-          {s.url&&<span style={{color:"#999",fontSize:12}}>{s.url.replace(/^https?:\/\//,"").slice(0,36)}</span>}
-          <button onClick={()=>onChange(sources.filter((_,j)=>j!==i))} style={{background:"none",border:"none",cursor:"pointer",color:"#bbb"}}><TrashIcon/></button>
+        <div key={i} style={{display:"flex",alignItems:"center",gap:8,padding:"7px 12px",background:C.sourceBg,borderRadius:7,marginBottom:5,fontSize:13}}>
+          <LinkIcon/><span style={{flex:1,fontWeight:600,color:C.textPrimary}}>{s.label}</span>
+          {s.url&&<span style={{color:C.textMuted,fontSize:12}}>{s.url.replace(/^https?:\/\//,"").slice(0,36)}</span>}
+          <button onClick={()=>onChange(sources.filter((_,j)=>j!==i))} style={{background:"none",border:"none",cursor:"pointer",color:C.textFaint}}><TrashIcon/></button>
         </div>
       ))}
     </div>
   );
 }
 
+// ── Filter Bar ────────────────────────────────────────────────────────────────
 function FilterBar({ filterTopic,setFilterTopic,filterRegion,setFilterRegion,isAdmin,filterStatus,setFilterStatus,search,setSearch }) {
+  const C = useContext(ThemeCtx);
+  const t = useContext(LangCtx);
   return (
     <div style={{marginBottom:28}}>
       <div style={{display:"flex",gap:10,marginBottom:14,flexWrap:"wrap",alignItems:"center"}}>
-        <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search articles…" style={{padding:"8px 14px",border:"1px solid #ddd",borderRadius:8,fontSize:13,width:200,outline:"none",background:"#fff"}}/>
-        {isAdmin&&<div style={{display:"flex",border:"1px solid #ddd",borderRadius:8,overflow:"hidden"}}>
+        <input value={search} onChange={e=>setSearch(e.target.value)} placeholder={t('searchPlaceholder')} style={{padding:"8px 14px",border:`1px solid ${C.filterBorder}`,borderRadius:8,fontSize:13,width:200,outline:"none",background:C.filterBg,color:C.textPrimary}}/>
+        {isAdmin&&<div style={{display:"flex",border:`1px solid ${C.filterBorder}`,borderRadius:8,overflow:"hidden"}}>
           {["All","public","private"].map(s=>(
-            <button key={s} onClick={()=>setFilterStatus(s)} style={{padding:"7px 13px",border:"none",cursor:"pointer",fontSize:12,fontWeight:600,background:filterStatus===s?"#111":"#fff",color:filterStatus===s?"#fff":"#666"}}>
-              {s==="All"?"All":s==="public"?"Public":"Private"}</button>
+            <button key={s} onClick={()=>setFilterStatus(s)} style={{padding:"7px 13px",border:"none",cursor:"pointer",fontSize:12,fontWeight:600,background:filterStatus===s?C.textPrimary:C.filterBg,color:filterStatus===s?C.offWhite:C.textSecondary}}>
+              {s==="All"?t('filterAll'):s==="public"?t('filterPublic'):t('filterPrivate')}</button>
           ))}
         </div>}
       </div>
       <div style={{marginBottom:10}}>
-        <div style={{fontSize:10,fontWeight:700,letterSpacing:1,textTransform:"uppercase",color:"#bbb",marginBottom:6}}>Topic</div>
+        <div style={{fontSize:10,fontWeight:700,letterSpacing:1,textTransform:"uppercase",color:C.textFaint,marginBottom:6}}>{t('filterTopic')}</div>
         <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
-          {["All",...TOPICS].map(t=>{const a=filterTopic===t,c=TOPIC_COLORS[t]||"#111";return(
-            <button key={t} onClick={()=>setFilterTopic(t)} style={{padding:"5px 13px",borderRadius:20,border:`1px solid ${a?(t==="All"?"#111":c):"#e0e0e0"}`,fontSize:12,cursor:"pointer",fontWeight:600,transition:"all .15s",background:a?(t==="All"?"#111":c):"#fff",color:a?"#fff":(t==="All"?"#555":c)}}>{t}</button>
+          {["All",...TOPICS].map(tp=>{const a=filterTopic===tp,c=TOPIC_COLORS[tp]||C.textPrimary;return(
+            <button key={tp} onClick={()=>setFilterTopic(tp)} style={{padding:"5px 13px",borderRadius:20,border:`1px solid ${a?(tp==="All"?C.textPrimary:c):C.editorBorderStrong}`,fontSize:12,cursor:"pointer",fontWeight:600,transition:"all .15s",background:a?(tp==="All"?C.textPrimary:c):C.filterBg,color:a?C.offWhite:(tp==="All"?C.textSecondary:c)}}>{tp}</button>
           );})}
         </div>
       </div>
       <div>
-        <div style={{fontSize:10,fontWeight:700,letterSpacing:1,textTransform:"uppercase",color:"#bbb",marginBottom:6}}>Region</div>
+        <div style={{fontSize:10,fontWeight:700,letterSpacing:1,textTransform:"uppercase",color:C.textFaint,marginBottom:6}}>{t('filterRegion')}</div>
         <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
-          {["All",...REGIONS].map(r=>{const a=filterRegion===r,c=REGION_COLORS[r]||"#555";return(
-            <button key={r} onClick={()=>setFilterRegion(r)} style={{padding:"5px 12px",borderRadius:20,border:`1px solid ${a?(r==="All"?"#111":c):"#e8e8e8"}`,fontSize:11,cursor:"pointer",fontWeight:600,transition:"all .15s",background:a?(r==="All"?"#111":c):"#fafafa",color:a?"#fff":(r==="All"?"#666":c)}}>{r}</button>
+          {["All",...REGIONS].map(r=>{const a=filterRegion===r,c=REGION_COLORS[r]||C.textSecondary;return(
+            <button key={r} onClick={()=>setFilterRegion(r)} style={{padding:"5px 12px",borderRadius:20,border:`1px solid ${a?(r==="All"?C.textPrimary:c):C.filterBorderAlt}`,fontSize:11,cursor:"pointer",fontWeight:600,transition:"all .15s",background:a?(r==="All"?C.textPrimary:c):C.filterBgAlt,color:a?C.offWhite:(r==="All"?C.textSecondary:c)}}>{r}</button>
           );})}
         </div>
       </div>
@@ -287,36 +306,42 @@ function FilterBar({ filterTopic,setFilterTopic,filterRegion,setFilterRegion,isA
   );
 }
 
+// ── Card ──────────────────────────────────────────────────────────────────────
 function Card({ post, onClick, onDelete, isAdmin }) {
+  const C = useContext(ThemeCtx);
+  const t = useContext(LangCtx);
   const imgMatch=post.body?.match(/<img[^>]+src="([^"]+)"/); const thumb=imgMatch?.[1];
   return (
-    <div onClick={onClick} style={{cursor:"pointer",background:"#fff",borderRadius:14,border:"1px solid #ebebeb",overflow:"hidden",transition:"all .15s",boxShadow:"0 1px 4px rgba(0,0,0,.04)"}}
+    <div onClick={onClick} style={{cursor:"pointer",background:C.cardBg,borderRadius:14,border:`1px solid ${C.border}`,overflow:"hidden",transition:"all .15s",boxShadow:"0 1px 4px rgba(0,0,0,.04)"}}
       onMouseEnter={e=>{e.currentTarget.style.boxShadow="0 8px 28px rgba(0,0,0,.09)";e.currentTarget.style.transform="translateY(-2px)";}}
       onMouseLeave={e=>{e.currentTarget.style.boxShadow="0 1px 4px rgba(0,0,0,.04)";e.currentTarget.style.transform="none";}}>
-      {thumb&&<div style={{height:160,overflow:"hidden",background:"#f0f0f0"}}><img src={thumb} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/></div>}
+      {thumb&&<div style={{height:160,overflow:"hidden",background:C.cardThumbBg}}><img src={thumb} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/></div>}
       <div style={{padding:"22px 24px"}}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:10}}>
           <div style={{display:"flex",flexWrap:"wrap",gap:5,flex:1}}>
-            {(post.topics||[]).map(t=><span key={t} style={{fontSize:10,fontWeight:700,letterSpacing:1.1,textTransform:"uppercase",color:TOPIC_COLORS[t]||"#555",borderLeft:`3px solid ${TOPIC_COLORS[t]||"#555"}`,paddingLeft:7}}>{t}</span>)}
-            {(post.regions||[]).map(r=><span key={r} style={{fontSize:10,fontWeight:600,letterSpacing:0.8,textTransform:"uppercase",color:REGION_COLORS[r]||"#888",background:`${REGION_COLORS[r]}18`,padding:"2px 7px",borderRadius:10}}>{r}</span>)}
+            {(post.topics||[]).map(tp=><span key={tp} style={{fontSize:10,fontWeight:700,letterSpacing:1.1,textTransform:"uppercase",color:TOPIC_COLORS[tp]||C.textSecondary,borderLeft:`3px solid ${TOPIC_COLORS[tp]||C.textSecondary}`,paddingLeft:7}}>{tp}</span>)}
+            {(post.regions||[]).map(r=><span key={r} style={{fontSize:10,fontWeight:600,letterSpacing:0.8,textTransform:"uppercase",color:REGION_COLORS[r]||C.privateGray,background:`${REGION_COLORS[r]}18`,padding:"2px 7px",borderRadius:10}}>{r}</span>)}
           </div>
           <div style={{display:"flex",gap:7,alignItems:"center",flexShrink:0,marginLeft:8}}>
-            {isAdmin&&<span style={{display:"flex",alignItems:"center",gap:4,fontSize:11,fontWeight:600,padding:"3px 9px",borderRadius:20,color:post.status==="public"?"#1a6b3c":"#888",background:post.status==="public"?"#e6f4ed":"#f2f2f2"}}>{post.status==="public"?<GlobeIcon/>:<LockIcon/>}{post.status==="public"?"Public":"Private"}</span>}
-            {isAdmin&&<button onClick={e=>{e.stopPropagation();if(window.confirm("Delete this article?"))onDelete(post.id);}} style={{background:"none",border:"none",cursor:"pointer",color:"#ddd",padding:2}}><TrashIcon/></button>}
+            {isAdmin&&<span style={{display:"flex",alignItems:"center",gap:4,fontSize:11,fontWeight:600,padding:"3px 9px",borderRadius:20,color:post.status==="public"?C.publicGreen:C.privateGray,background:post.status==="public"?C.publicBg:C.privateBg}}>{post.status==="public"?<GlobeIcon/>:<LockIcon/>}{post.status==="public"?t('statusPublic'):t('statusPrivate')}</span>}
+            {isAdmin&&<button onClick={e=>{e.stopPropagation();if(window.confirm(t('deleteConfirm')))onDelete(post.id);}} style={{background:"none",border:"none",cursor:"pointer",color:C.filterBorder,padding:2}}><TrashIcon/></button>}
           </div>
         </div>
-        <h2 style={{fontSize:19,fontWeight:700,lineHeight:1.3,margin:"0 0 9px",color:"#111",fontFamily:"Georgia,serif"}}>{post.title}</h2>
-        <p style={{fontSize:14,color:"#777",lineHeight:1.6,margin:"0 0 18px"}}>{post.summary}</p>
-        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",fontSize:12,color:"#bbb"}}>
-          <span>{post.author&&<span style={{color:"#aaa",marginRight:6}}>{post.author} · </span>}{fmt(post.updatedAt)}</span>
-          <span style={{background:"#f5f5f3",padding:"2px 8px",borderRadius:8,fontSize:11,fontWeight:600,color:"#aaa"}}>{readingTime(post.body)}</span>
+        <h2 style={{fontSize:19,fontWeight:700,lineHeight:1.3,margin:"0 0 9px",color:C.textPrimary,fontFamily:"Georgia,serif"}}>{post.title}</h2>
+        <p style={{fontSize:14,color:C.textSecondary,lineHeight:1.6,margin:"0 0 18px"}}>{post.summary}</p>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",fontSize:12,color:C.textFaint}}>
+          <span>{post.author&&<span style={{color:C.metaText,marginRight:6}}>{post.author} · </span>}{fmt(post.updatedAt)}</span>
+          <span style={{background:C.readingTimeBg,padding:"2px 8px",borderRadius:8,fontSize:11,fontWeight:600,color:C.readingTimeText}}>{readingTime(post.body)} min read</span>
         </div>
       </div>
     </div>
   );
 }
 
+// ── Editor ────────────────────────────────────────────────────────────────────
 function Editor({ post, onSave, onBack }) {
+  const C = useContext(ThemeCtx);
+  const t = useContext(LangCtx);
   const [title,setTitle]=useState(post.title||""); const [topics,setTopics]=useState(post.topics||[]);
   const [regions,setRegions]=useState(post.regions||[]); const [status,setStatus]=useState(post.status||"private");
   const [summary,setSummary]=useState(post.summary||""); const [author,setAuthor]=useState(post.author||"");
@@ -329,60 +354,63 @@ function Editor({ post, onSave, onBack }) {
   return (
     <div style={{width:"100%",boxSizing:"border-box",padding:"32px 48px 100px"}}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:32}}>
-        <button onClick={onBack} style={{display:"flex",alignItems:"center",gap:6,background:"none",border:"1px solid #e0e0e0",borderRadius:8,padding:"8px 16px",cursor:"pointer",fontSize:13,color:"#555"}}><BackIcon/> Back</button>
+        <button onClick={onBack} style={{display:"flex",alignItems:"center",gap:6,background:"none",border:`1px solid ${C.editorBorderStrong}`,borderRadius:8,padding:"8px 16px",cursor:"pointer",fontSize:13,color:C.textSecondary}}><BackIcon/> {t('back')}</button>
         <div style={{display:"flex",gap:10,alignItems:"center"}}>
-          <span style={{fontSize:13,color:flash?"#1a6b3c":"transparent",transition:"color .3s",fontWeight:600}}>✓ Saved</span>
-          <button onClick={save} style={{display:"flex",alignItems:"center",gap:6,background:"#111",color:"#fff",border:"none",borderRadius:8,padding:"9px 20px",cursor:"pointer",fontSize:14,fontWeight:600}}><SaveIcon/> Save</button>
+          <span style={{fontSize:13,color:flash?C.publicGreen:"transparent",transition:"color .3s",fontWeight:600}}>{t('saved')}</span>
+          <button onClick={save} style={{display:"flex",alignItems:"center",gap:6,background:C.textPrimary,color:C.offWhite,border:"none",borderRadius:8,padding:"9px 20px",cursor:"pointer",fontSize:14,fontWeight:600}}><SaveIcon/> {t('save')}</button>
         </div>
       </div>
-      <div style={{display:"flex",border:"1px solid #ddd",borderRadius:8,overflow:"hidden",marginBottom:24,width:"fit-content"}}>
-        {["public","private"].map(s=><button key={s} onClick={()=>setStatus(s)} style={{display:"flex",alignItems:"center",gap:5,padding:"8px 16px",border:"none",cursor:"pointer",fontSize:13,fontWeight:600,background:status===s?"#111":"#fff",color:status===s?"#fff":"#666"}}>{s==="public"?<GlobeIcon/>:<LockIcon/>}{s==="public"?"Public":"Private"}</button>)}
+      <div style={{display:"flex",border:`1px solid ${C.filterBorder}`,borderRadius:8,overflow:"hidden",marginBottom:24,width:"fit-content"}}>
+        {["public","private"].map(s=><button key={s} onClick={()=>setStatus(s)} style={{display:"flex",alignItems:"center",gap:5,padding:"8px 16px",border:"none",cursor:"pointer",fontSize:13,fontWeight:600,background:status===s?C.textPrimary:C.filterBg,color:status===s?C.offWhite:C.textSecondary}}>{s==="public"?<GlobeIcon/>:<LockIcon/>}{s==="public"?t('statusPublic'):t('statusPrivate')}</button>)}
       </div>
-      <MultiPicker label="Topics" options={TOPICS} colors={TOPIC_COLORS} selected={topics} onChange={setTopics}/>
-      <MultiPicker label="Region" options={REGIONS} colors={REGION_COLORS} selected={regions} onChange={setRegions}/>
-      <input value={title} onChange={e=>setTitle(e.target.value)} placeholder="Article title…" style={{width:"100%",boxSizing:"border-box",fontSize:32,fontWeight:700,fontFamily:"Georgia,serif",border:"none",borderBottom:"2px solid #eee",padding:"6px 0",marginBottom:14,outline:"none",color:"#111",background:"transparent",marginTop:10}}/>
-      <textarea value={summary} onChange={e=>setSummary(e.target.value)} placeholder="One-sentence summary / lede…" rows={2} style={{width:"100%",boxSizing:"border-box",fontSize:15,fontFamily:"Georgia,serif",fontStyle:"italic",color:"#666",border:"none",borderBottom:"1px solid #eee",padding:"6px 0",marginBottom:14,outline:"none",resize:"none",lineHeight:1.6,background:"transparent"}}/>
-      <input value={author} onChange={e=>setAuthor(e.target.value)} placeholder="Author name…" style={{width:"100%",boxSizing:"border-box",fontSize:14,border:"none",borderBottom:"1px solid #eee",padding:"6px 0",marginBottom:26,outline:"none",color:"#555",background:"transparent"}}/>
+      <MultiPicker label={t('labelTopics')} options={TOPICS} colors={TOPIC_COLORS} selected={topics} onChange={setTopics}/>
+      <MultiPicker label={t('labelRegion')} options={REGIONS} colors={REGION_COLORS} selected={regions} onChange={setRegions}/>
+      <input value={title} onChange={e=>setTitle(e.target.value)} placeholder={t('placeholderTitle')} style={{width:"100%",boxSizing:"border-box",fontSize:32,fontWeight:700,fontFamily:"Georgia,serif",border:"none",borderBottom:`2px solid ${C.editorBorder}`,padding:"6px 0",marginBottom:14,outline:"none",color:C.textPrimary,background:"transparent",marginTop:10}}/>
+      <textarea value={summary} onChange={e=>setSummary(e.target.value)} placeholder={t('placeholderSummary')} rows={2} style={{width:"100%",boxSizing:"border-box",fontSize:15,fontFamily:"Georgia,serif",fontStyle:"italic",color:C.summaryColor,border:"none",borderBottom:`1px solid ${C.editorBorder}`,padding:"6px 0",marginBottom:14,outline:"none",resize:"none",lineHeight:1.6,background:"transparent"}}/>
+      <input value={author} onChange={e=>setAuthor(e.target.value)} placeholder={t('placeholderAuthor')} style={{width:"100%",boxSizing:"border-box",fontSize:14,border:"none",borderBottom:`1px solid ${C.editorBorder}`,padding:"6px 0",marginBottom:26,outline:"none",color:C.authorColor,background:"transparent"}}/>
       <div style={{marginBottom:30}}>
-        <div style={{fontSize:11,fontWeight:700,letterSpacing:1.1,textTransform:"uppercase",color:"#bbb",marginBottom:10}}>Body</div>
+        <div style={{fontSize:11,fontWeight:700,letterSpacing:1.1,textTransform:"uppercase",color:C.textFaint,marginBottom:10}}>{t('labelBody')}</div>
         <RichEditor value={body} onChange={setBody}/>
       </div>
       <div>
-        <div style={{fontSize:11,fontWeight:700,letterSpacing:1.1,textTransform:"uppercase",color:"#bbb",marginBottom:10}}>Sources & References</div>
+        <div style={{fontSize:11,fontWeight:700,letterSpacing:1.1,textTransform:"uppercase",color:C.textFaint,marginBottom:10}}>{t('labelSources')}</div>
         <SourceMgr sources={sources} onChange={setSources}/>
       </div>
     </div>
   );
 }
 
+// ── Reader ────────────────────────────────────────────────────────────────────
 function Reader({ post, onEdit, onBack, isAdmin }) {
+  const C = useContext(ThemeCtx);
+  const t = useContext(LangCtx);
   const imgMatch=post.body?.match(/<img[^>]+src="([^"]+)"/); const thumb=imgMatch?.[1];
   useEffect(()=>{ updateOGTags({title:post.title,description:post.summary,image:thumb}); return()=>updateOGTags({}); },[post.title,post.summary,thumb]);
   return (
     <div style={{maxWidth:740,margin:"0 auto",padding:"32px 0 100px"}}>
       <div style={{display:"flex",justifyContent:"space-between",marginBottom:40}}>
-        <button onClick={onBack} style={{display:"flex",alignItems:"center",gap:6,background:"none",border:"1px solid #e0e0e0",borderRadius:8,padding:"8px 16px",cursor:"pointer",fontSize:13,color:"#555"}}><BackIcon/> Back</button>
-        {isAdmin&&<button onClick={onEdit} style={{display:"flex",alignItems:"center",gap:6,background:"none",border:"1px solid #333",borderRadius:8,padding:"8px 16px",cursor:"pointer",fontSize:13,color:"#333",fontWeight:600}}><PenIcon/> Edit</button>}
+        <button onClick={onBack} style={{display:"flex",alignItems:"center",gap:6,background:"none",border:`1px solid ${C.editorBorderStrong}`,borderRadius:8,padding:"8px 16px",cursor:"pointer",fontSize:13,color:C.textSecondary}}><BackIcon/> {t('back')}</button>
+        {isAdmin&&<button onClick={onEdit} style={{display:"flex",alignItems:"center",gap:6,background:"none",border:`1px solid ${C.border}`,borderRadius:8,padding:"8px 16px",cursor:"pointer",fontSize:13,color:C.textPrimary,fontWeight:600}}><PenIcon/> Edit</button>}
       </div>
       <div style={{display:"flex",flexWrap:"wrap",gap:8,alignItems:"center",marginBottom:14}}>
-        {(post.topics||[]).map(t=><span key={t} style={{fontSize:10,fontWeight:700,letterSpacing:1.2,textTransform:"uppercase",color:TOPIC_COLORS[t]||"#555",borderLeft:`3px solid ${TOPIC_COLORS[t]||"#555"}`,paddingLeft:9}}>{t}</span>)}
-        {(post.regions||[]).map(r=><span key={r} style={{fontSize:10,fontWeight:600,letterSpacing:0.8,textTransform:"uppercase",color:REGION_COLORS[r]||"#888",background:`${REGION_COLORS[r]}22`,padding:"3px 9px",borderRadius:10}}>{r}</span>)}
-        {isAdmin&&<span style={{display:"flex",alignItems:"center",gap:4,fontSize:11,fontWeight:600,padding:"3px 9px",borderRadius:20,color:post.status==="public"?"#1a6b3c":"#888",background:post.status==="public"?"#e6f4ed":"#f2f2f2"}}>{post.status==="public"?<GlobeIcon/>:<LockIcon/>}{post.status==="public"?"Public":"Private"}</span>}
+        {(post.topics||[]).map(tp=><span key={tp} style={{fontSize:10,fontWeight:700,letterSpacing:1.2,textTransform:"uppercase",color:TOPIC_COLORS[tp]||C.textSecondary,borderLeft:`3px solid ${TOPIC_COLORS[tp]||C.textSecondary}`,paddingLeft:9}}>{tp}</span>)}
+        {(post.regions||[]).map(r=><span key={r} style={{fontSize:10,fontWeight:600,letterSpacing:0.8,textTransform:"uppercase",color:REGION_COLORS[r]||C.privateGray,background:`${REGION_COLORS[r]}22`,padding:"3px 9px",borderRadius:10}}>{r}</span>)}
+        {isAdmin&&<span style={{display:"flex",alignItems:"center",gap:4,fontSize:11,fontWeight:600,padding:"3px 9px",borderRadius:20,color:post.status==="public"?C.publicGreen:C.privateGray,background:post.status==="public"?C.publicBg:C.privateBg}}>{post.status==="public"?<GlobeIcon/>:<LockIcon/>}{post.status==="public"?t('statusPublic'):t('statusPrivate')}</span>}
       </div>
-      <h1 style={{fontSize:40,fontWeight:700,lineHeight:1.2,margin:"0 0 16px",color:"#111",fontFamily:"Georgia,serif"}}>{post.title}</h1>
-      <p style={{fontSize:18,color:"#666",fontStyle:"italic",lineHeight:1.65,marginBottom:14,fontFamily:"Georgia,serif"}}>{post.summary}</p>
-      <div style={{fontSize:13,color:"#bbb",marginBottom:40,paddingBottom:22,borderBottom:"1px solid #eee",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-        <span>{post.author&&<span style={{fontWeight:600,color:"#555",marginRight:6}}>By {post.author} · </span>}{fmt(post.createdAt)}{post.updatedAt!==post.createdAt&&<span> · Last revised {fmt(post.updatedAt)}</span>}</span>
-        <span style={{background:"#f5f5f3",padding:"3px 10px",borderRadius:8,fontSize:11,fontWeight:600,color:"#aaa",flexShrink:0}}>{readingTime(post.body)}</span>
+      <h1 style={{fontSize:40,fontWeight:700,lineHeight:1.2,margin:"0 0 16px",color:C.textPrimary,fontFamily:"Georgia,serif"}}>{post.title}</h1>
+      <p style={{fontSize:18,color:C.summaryColor,fontStyle:"italic",lineHeight:1.65,marginBottom:14,fontFamily:"Georgia,serif"}}>{post.summary}</p>
+      <div style={{fontSize:13,color:C.textFaint,marginBottom:40,paddingBottom:22,borderBottom:`1px solid ${C.editorBorder}`,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+        <span>{post.author&&<span style={{fontWeight:600,color:C.textSecondary,marginRight:6}}>{t('by')} {post.author} · </span>}{fmt(post.createdAt)}{post.updatedAt!==post.createdAt&&<span> · {t('lastRevised')} {fmt(post.updatedAt)}</span>}</span>
+        <span style={{background:C.readingTimeBg,padding:"3px 10px",borderRadius:8,fontSize:11,fontWeight:600,color:C.readingTimeText,flexShrink:0}}>{readingTime(post.body)} min read</span>
       </div>
-      <div style={{fontSize:17,lineHeight:1.85,color:"#1a1a1a",fontFamily:"Georgia,serif"}} dangerouslySetInnerHTML={{__html:post.body}}/>
+      <div style={{fontSize:17,lineHeight:1.85,color:C.bodyText,fontFamily:"Georgia,serif"}} dangerouslySetInnerHTML={{__html:post.body}}/>
       {post.sources?.length>0&&(
-        <div style={{marginTop:52,paddingTop:26,borderTop:"1px solid #eee"}}>
-          <div style={{fontSize:10,fontWeight:700,letterSpacing:1.2,textTransform:"uppercase",color:"#bbb",marginBottom:16}}>Sources & References</div>
+        <div style={{marginTop:52,paddingTop:26,borderTop:`1px solid ${C.editorBorder}`}}>
+          <div style={{fontSize:10,fontWeight:700,letterSpacing:1.2,textTransform:"uppercase",color:C.textFaint,marginBottom:16}}>{t('labelSources')}</div>
           {post.sources.map((s,i)=>(
             <div key={i} style={{display:"flex",alignItems:"center",gap:10,marginBottom:9,fontSize:14}}>
-              <span style={{color:"#ccc",minWidth:18}}>{i+1}.</span>
-              {s.url?<a href={s.url} target="_blank" rel="noreferrer" style={{color:"#333",textDecoration:"underline"}}>{s.label}</a>:<span style={{color:"#333"}}>{s.label}</span>}
+              <span style={{color:C.filterBorder,minWidth:18}}>{i+1}.</span>
+              {s.url?<a href={s.url} target="_blank" rel="noreferrer" style={{color:C.linkColor,textDecoration:"underline"}}>{s.label}</a>:<span style={{color:C.linkColor}}>{s.label}</span>}
             </div>
           ))}
         </div>
@@ -391,25 +419,66 @@ function Reader({ post, onEdit, onBack, isAdmin }) {
   );
 }
 
+// ── Footer ────────────────────────────────────────────────────────────────────
 function Footer() {
+  const C = useContext(ThemeCtx);
+  const t = useContext(LangCtx);
   return (
-    <footer style={{borderTop:"1px solid #ebebeb",background:"#fff",marginTop:80}}>
+    <footer style={{borderTop:`1px solid ${C.border}`,background:C.white,marginTop:80}}>
       <div style={{maxWidth:1200,margin:"0 auto",padding:"28px 40px",display:"flex",flexWrap:"wrap",justifyContent:"space-between",alignItems:"center",gap:12}}>
         <div>
-          <span style={{fontFamily:"Georgia,serif",fontWeight:800,fontSize:15,color:"#111",letterSpacing:"-0.3px"}}>The Notebook</span>
-          <span style={{display:"block",fontSize:11,color:"#bbb",marginTop:3}}>Independent analysis publication</span>
+          <span style={{fontFamily:"Georgia,serif",fontWeight:800,fontSize:15,color:C.textPrimary,letterSpacing:"-0.3px"}}>{t('siteTitle')}</span>
+          <span style={{display:"block",fontSize:11,color:C.textFaint,marginTop:3}}>{t('footerTagline')}</span>
         </div>
-        <div style={{fontSize:11,color:"#bbb",textAlign:"center",lineHeight:1.8}}>
-          <div>© {new Date().getFullYear()} The Notebook · Franz-Frederick Acclassato · All rights reserved</div>
-          <div>Published content is for informational and educational purposes, powered by the drive to discover and explain.</div>
+        <div style={{fontSize:11,color:C.textFaint,textAlign:"center",lineHeight:1.8}}>
+          <div>© {new Date().getFullYear()} The Notebook · {t('footerCopy')}</div>
+          <div>{t('footerDisclaimer')}</div>
         </div>
-        <a href="https://thenotebook.press" style={{fontSize:11,color:"#bbb",textDecoration:"none"}}>thenotebook.press</a>
+        <a href="https://thenotebook.press" style={{fontSize:11,color:C.textFaint,textDecoration:"none"}}>thenotebook.press</a>
       </div>
     </footer>
   );
 }
 
+// ── App (root) ────────────────────────────────────────────────────────────────
+const LANG_OPTIONS = [
+  { code:"en", flag:"🇬🇧", label:"English" },
+  { code:"fr", flag:"🇫🇷", label:"Français" },
+  { code:"es", flag:"🇪🇸", label:"Español" },
+  { code:"de", flag:"🇩🇪", label:"Deutsch" },
+];
+
 export default function App() {
+  // ── Theme state ──
+  const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  const [isDark, setIsDark] = useState(() => {
+    const stored = localStorage.getItem('nb_theme');
+    return stored === 'dark' || (stored === null && prefersDark);
+  });
+  useEffect(() => { localStorage.setItem('nb_theme', isDark ? 'dark' : 'light'); }, [isDark]);
+  useEffect(() => {
+    const mq = window.matchMedia('(prefers-color-scheme: dark)');
+    const handler = e => { if (!localStorage.getItem('nb_theme')) setIsDark(e.matches); };
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, []);
+  const C = isDark ? DARK : LIGHT;
+
+  // ── Language state ──
+  const [lang, setLang] = useState(() => localStorage.getItem('nb_lang') || 'en');
+  const t = key => (TRANSLATIONS[lang]?.[key]) ?? (TRANSLATIONS.en[key] ?? key);
+  useEffect(() => { localStorage.setItem('nb_lang', lang); }, [lang]);
+
+  // ── Lang dropdown state ──
+  const [langOpen, setLangOpen] = useState(false);
+  const langRef = useRef(null);
+  useEffect(() => {
+    const handler = e => { if (langRef.current && !langRef.current.contains(e.target)) setLangOpen(false); };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  // ── App state ──
   const [posts,setPosts]     = useState([]);
   const [loading,setLoading] = useState(true);
   const [view,setView]       = useState("home");
@@ -428,13 +497,12 @@ export default function App() {
 
   useEffect(()=>{ if(view==="home") updateOGTags({}); },[view]);
 
-  // Save: update local state, then push the full updated array to Upstash
   const handleSave = async (p) => {
     const updated = posts.find(x=>x.id===p.id)
       ? posts.map(x=>x.id===p.id ? p : x)
       : [p, ...posts];
     setPosts(updated);
-    await apiSetPosts(updated);  // sends the whole array — posts-set.js stores it cleanly
+    await apiSetPosts(updated);
   };
 
   const handleDelete = async (id) => {
@@ -465,51 +533,86 @@ export default function App() {
   );
 
   const Header = () => (
-    <header style={{background:"#fff",borderBottom:"1px solid #ebebeb",padding:"0 24px",position:"sticky",top:0,zIndex:100}}>
+    <header style={{background:C.white,borderBottom:`1px solid ${C.border}`,padding:"0 24px",position:"sticky",top:0,zIndex:100}}>
       <div style={{width:"100%",display:"flex",alignItems:"center",justifyContent:"space-between",height:62}}>
+        {/* Left side */}
         <div style={{display:"flex",alignItems:"center",gap:18}}>
-          <button onClick={()=>setSidebarOpen(true)} style={{background:"none",border:"none",cursor:"pointer",padding:"6px 4px",display:"flex",alignItems:"center",lineHeight:0}}><HamburgerIcon/></button>
+          <button onClick={()=>setSidebarOpen(true)} style={{background:"none",border:"none",cursor:"pointer",padding:"6px 4px",display:"flex",alignItems:"center",lineHeight:0}}><HamburgerIcon color={C.accent}/></button>
           <div style={{display:"flex",alignItems:"baseline",gap:12}}>
-            <span onClick={()=>setView("home")} style={{fontSize:21,fontWeight:800,fontFamily:"Georgia,serif",color:"#111",letterSpacing:"-0.5px",cursor:"pointer"}}>The Notebook</span>
-            <span style={{fontSize:12,color:"#bbb"}}>{isAdmin?`${pub} public · ${posts.length-pub} private`:`${pub} article${pub!==1?"s":""}`}</span>
+            <span onClick={()=>setView("home")} style={{fontSize:21,fontWeight:800,fontFamily:"Georgia,serif",color:C.textPrimary,letterSpacing:"-0.5px",cursor:"pointer"}}>{t('siteTitle')}</span>
+            <span style={{fontSize:12,color:C.textFaint}}>{isAdmin?`${pub} public · ${posts.length-pub} private`:`${pub} article${pub!==1?"s":""}`}</span>
+          </div>
+          {/* Language picker */}
+          <div ref={langRef} style={{position:"relative"}}>
+            <button onClick={()=>setLangOpen(o=>!o)} style={{display:"flex",alignItems:"center",gap:5,background:"none",border:`1px solid ${langOpen?C.border:"transparent"}`,borderRadius:7,padding:"5px 8px",cursor:"pointer",color:C.textMuted,fontSize:13,transition:"border-color .15s"}}>
+              <LangIcon/>
+              <span style={{fontSize:12,fontWeight:600}}>{LANG_OPTIONS.find(l=>l.code===lang)?.flag}</span>
+            </button>
+            {langOpen&&(
+              <div style={{position:"absolute",top:"calc(100% + 6px)",left:0,background:C.white,border:`1px solid ${C.border}`,borderRadius:10,boxShadow:"0 8px 28px rgba(0,0,0,.12)",minWidth:148,zIndex:200,overflow:"hidden"}}>
+                {LANG_OPTIONS.map(l=>(
+                  <button key={l.code} onClick={()=>{setLang(l.code);setLangOpen(false);}}
+                    style={{display:"flex",alignItems:"center",gap:10,width:"100%",padding:"9px 14px",background:lang===l.code?C.accentLight:"transparent",border:"none",cursor:"pointer",fontSize:13,fontWeight:lang===l.code?700:500,color:lang===l.code?C.accent:C.textSecondary,textAlign:"left",transition:"background .1s"}}>
+                    <span style={{fontSize:16}}>{l.flag}</span>{l.label}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         </div>
-        {isAdmin&&<button onClick={()=>{setActiveId(null);setView("new");}} style={{display:"flex",alignItems:"center",gap:7,background:"#111",color:"#fff",border:"none",borderRadius:9,padding:"8px 18px",cursor:"pointer",fontSize:13,fontWeight:600}}><PlusIcon/> New Article</button>}
+        {/* Right side */}
+        <div style={{display:"flex",alignItems:"center",gap:10}}>
+          <button onClick={()=>setIsDark(d=>!d)} title={isDark?"Light mode":"Dark mode"}
+            style={{display:"flex",alignItems:"center",justifyContent:"center",background:"none",border:`1px solid ${C.border}`,borderRadius:7,padding:"6px 8px",cursor:"pointer",color:C.textMuted,transition:"border-color .15s"}}>
+            {isDark?<SunIcon/>:<MoonIcon/>}
+          </button>
+          {isAdmin&&<button onClick={()=>{setActiveId(null);setView("new");}} style={{display:"flex",alignItems:"center",gap:7,background:C.textPrimary,color:C.offWhite,border:"none",borderRadius:9,padding:"8px 18px",cursor:"pointer",fontSize:13,fontWeight:600}}><PlusIcon/> {t('newArticle')}</button>}
+        </div>
       </div>
     </header>
   );
 
-  if(loading) return <div style={{minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",background:"#faf9f7"}}><div style={{fontSize:14,color:"#aaa",fontFamily:"Georgia,serif"}}>Loading…</div></div>;
-
-  if(view==="read") return (
-    <div style={{minHeight:"100vh",width:"100%",background:"#faf9f7",display:"flex",flexDirection:"column"}}>
-      {sidebar}{showLogin&&<LoginModal onLogin={handleLogin} onClose={()=>setShowLogin(false)}/>}
-      <Header/>
-      <div style={{flex:1,padding:"36px 48px"}}><Reader post={activePost} onBack={()=>setView("home")} onEdit={()=>setView("edit")} isAdmin={isAdmin}/></div>
-      <Footer/>
-    </div>
-  );
-
-  if(view==="edit"||view==="new") return (
-    <div style={{minHeight:"100vh",width:"100%",background:"#faf9f7"}}>
-      {sidebar}<Header/>
-      <Editor post={view==="new"?{}:activePost} onSave={p=>{handleSave(p);setActiveId(p.id);setView("read");}} onBack={()=>setView(activeId?"read":"home")}/>
-    </div>
+  if(loading) return (
+    <ThemeCtx.Provider value={C}>
+      <div style={{minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",background:C.offWhite}}>
+        <div style={{fontSize:14,color:C.metaText,fontFamily:"Georgia,serif"}}>{t('loading')}</div>
+      </div>
+    </ThemeCtx.Provider>
   );
 
   return (
-    <div style={{minHeight:"100vh",width:"100%",background:"#faf9f7",fontFamily:"system-ui,sans-serif",display:"flex",flexDirection:"column"}}>
-      {sidebar}{showLogin&&<LoginModal onLogin={handleLogin} onClose={()=>setShowLogin(false)}/>}
-      <Header/>
-      <main style={{flex:1,width:"100%",boxSizing:"border-box",padding:"34px 40px"}}>
-        <FilterBar filterTopic={filterTopic} setFilterTopic={setFilterTopic} filterRegion={filterRegion} setFilterRegion={setFilterRegion} isAdmin={isAdmin} filterStatus={filterStatus} setFilterStatus={setFilterStatus} search={search} setSearch={setSearch}/>
-        {visible.length===0
-          ?<div style={{textAlign:"center",padding:"90px 0"}}><div style={{fontSize:17,fontWeight:600,color:"#aaa"}}>New articles coming soon!</div></div>
-          :<div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(340px,1fr))",gap:20}}>
-            {visible.map(p=><Card key={p.id} post={p} onClick={()=>{setActiveId(p.id);setView("read");}} onDelete={handleDelete} isAdmin={isAdmin}/>)}
-          </div>}
-      </main>
-      <Footer/>
-    </div>
+    <ThemeCtx.Provider value={C}>
+      <LangCtx.Provider value={t}>
+        {view==="read"&&(
+          <div style={{minHeight:"100vh",width:"100%",background:C.offWhite,display:"flex",flexDirection:"column"}}>
+            {sidebar}{showLogin&&<LoginModal onLogin={handleLogin} onClose={()=>setShowLogin(false)}/>}
+            <Header/>
+            <div style={{flex:1,padding:"36px 48px"}}><Reader post={activePost} onBack={()=>setView("home")} onEdit={()=>setView("edit")} isAdmin={isAdmin}/></div>
+            <Footer/>
+          </div>
+        )}
+        {(view==="edit"||view==="new")&&(
+          <div style={{minHeight:"100vh",width:"100%",background:C.offWhite}}>
+            {sidebar}<Header/>
+            <Editor post={view==="new"?{}:activePost} onSave={p=>{handleSave(p);setActiveId(p.id);setView("read");}} onBack={()=>setView(activeId?"read":"home")}/>
+          </div>
+        )}
+        {view==="home"&&(
+          <div style={{minHeight:"100vh",width:"100%",background:C.offWhite,fontFamily:"system-ui,sans-serif",display:"flex",flexDirection:"column"}}>
+            {sidebar}{showLogin&&<LoginModal onLogin={handleLogin} onClose={()=>setShowLogin(false)}/>}
+            <Header/>
+            <main style={{flex:1,width:"100%",boxSizing:"border-box",padding:"34px 40px"}}>
+              <FilterBar filterTopic={filterTopic} setFilterTopic={setFilterTopic} filterRegion={filterRegion} setFilterRegion={setFilterRegion} isAdmin={isAdmin} filterStatus={filterStatus} setFilterStatus={setFilterStatus} search={search} setSearch={setSearch}/>
+              {visible.length===0
+                ?<div style={{textAlign:"center",padding:"90px 0"}}><div style={{fontSize:17,fontWeight:600,color:C.metaText}}>{t('comingSoon')}</div></div>
+                :<div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(340px,1fr))",gap:20}}>
+                  {visible.map(p=><Card key={p.id} post={p} onClick={()=>{setActiveId(p.id);setView("read");}} onDelete={handleDelete} isAdmin={isAdmin}/>)}
+                </div>}
+            </main>
+            <Footer/>
+          </div>
+        )}
+      </LangCtx.Provider>
+    </ThemeCtx.Provider>
   );
 }
