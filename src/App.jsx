@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, createContext, useContext } from "react";
-import { LIGHT, DARK, TRANSLATIONS, TOPIC_COLORS, REGION_COLORS } from "./theme";
+import { LIGHT, DARK, DARK_TOPIC_COLORS, TRANSLATIONS, TOPIC_COLORS, REGION_COLORS } from "./theme";
 
 const ThemeCtx = createContext(LIGHT);
 const LangCtx  = createContext(k => k);
@@ -289,8 +289,8 @@ function FilterBar({ filterTopic,setFilterTopic,filterRegion,setFilterRegion,isA
       <div style={{marginBottom:10}}>
         <div style={{fontSize:10,fontWeight:700,letterSpacing:1,textTransform:"uppercase",color:C.textFaint,marginBottom:6}}>{t('filterTopic')}</div>
         <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
-          {["All",...TOPICS].map(tp=>{const a=filterTopic===tp,c=TOPIC_COLORS[tp]||C.textPrimary;return(
-            <button key={tp} onClick={()=>setFilterTopic(tp)} style={{padding:"5px 13px",borderRadius:20,border:`1px solid ${a?(tp==="All"?C.textPrimary:c):C.editorBorderStrong}`,fontSize:12,cursor:"pointer",fontWeight:600,transition:"all .15s",background:a?(tp==="All"?C.textPrimary:c):C.filterBg,color:a?C.offWhite:(tp==="All"?C.textSecondary:c)}}>{tp}</button>
+          {["All",...TOPICS].map(tp=>{const a=filterTopic===tp,c=C.topicColors[tp]||C.textPrimary;return(
+            <button key={tp} onClick={()=>setFilterTopic(tp)} style={{padding:"5px 13px",borderRadius:20,border:`1px solid ${a?(tp==="All"?C.textPrimary:c):C.editorBorderStrong}`,fontSize:12,cursor:"pointer",fontWeight:600,transition:"all .15s",background:a?(tp==="All"?C.textPrimary:c):C.filterBg,color:a?C.offWhite:(tp==="All"?C.textSecondary:c)}}>{tp==="All"?t('filterAll'):t('topic:'+tp)}</button>
           );})}
         </div>
       </div>
@@ -298,7 +298,7 @@ function FilterBar({ filterTopic,setFilterTopic,filterRegion,setFilterRegion,isA
         <div style={{fontSize:10,fontWeight:700,letterSpacing:1,textTransform:"uppercase",color:C.textFaint,marginBottom:6}}>{t('filterRegion')}</div>
         <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
           {["All",...REGIONS].map(r=>{const a=filterRegion===r,c=REGION_COLORS[r]||C.textSecondary;return(
-            <button key={r} onClick={()=>setFilterRegion(r)} style={{padding:"5px 12px",borderRadius:20,border:`1px solid ${a?(r==="All"?C.textPrimary:c):C.filterBorderAlt}`,fontSize:11,cursor:"pointer",fontWeight:600,transition:"all .15s",background:a?(r==="All"?C.textPrimary:c):C.filterBgAlt,color:a?C.offWhite:(r==="All"?C.textSecondary:c)}}>{r}</button>
+            <button key={r} onClick={()=>setFilterRegion(r)} style={{padding:"5px 12px",borderRadius:20,border:`1px solid ${a?(r==="All"?C.textPrimary:c):C.filterBorderAlt}`,fontSize:11,cursor:"pointer",fontWeight:600,transition:"all .15s",background:a?(r==="All"?C.textPrimary:c):C.filterBgAlt,color:a?C.offWhite:(r==="All"?C.textSecondary:c)}}>{r==="All"?t('filterAll'):t('region:'+r)}</button>
           );})}
         </div>
       </div>
@@ -319,8 +319,8 @@ function Card({ post, onClick, onDelete, isAdmin }) {
       <div style={{padding:"22px 24px"}}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:10}}>
           <div style={{display:"flex",flexWrap:"wrap",gap:5,flex:1}}>
-            {(post.topics||[]).map(tp=><span key={tp} style={{fontSize:10,fontWeight:700,letterSpacing:1.1,textTransform:"uppercase",color:TOPIC_COLORS[tp]||C.textSecondary,borderLeft:`3px solid ${TOPIC_COLORS[tp]||C.textSecondary}`,paddingLeft:7}}>{tp}</span>)}
-            {(post.regions||[]).map(r=><span key={r} style={{fontSize:10,fontWeight:600,letterSpacing:0.8,textTransform:"uppercase",color:REGION_COLORS[r]||C.privateGray,background:`${REGION_COLORS[r]}18`,padding:"2px 7px",borderRadius:10}}>{r}</span>)}
+            {(post.topics||[]).map(tp=><span key={tp} style={{fontSize:10,fontWeight:700,letterSpacing:1.1,textTransform:"uppercase",color:C.topicColors[tp]||C.textSecondary,borderLeft:`3px solid ${C.topicColors[tp]||C.textSecondary}`,paddingLeft:7}}>{t('topic:'+tp)}</span>)}
+            {(post.regions||[]).map(r=><span key={r} style={{fontSize:10,fontWeight:600,letterSpacing:0.8,textTransform:"uppercase",color:REGION_COLORS[r]||C.privateGray,background:`${REGION_COLORS[r]}18`,padding:"2px 7px",borderRadius:10}}>{t('region:'+r)}</span>)}
           </div>
           <div style={{display:"flex",gap:7,alignItems:"center",flexShrink:0,marginLeft:8}}>
             {isAdmin&&<span style={{display:"flex",alignItems:"center",gap:4,fontSize:11,fontWeight:600,padding:"3px 9px",borderRadius:20,color:post.status==="public"?C.publicGreen:C.privateGray,background:post.status==="public"?C.publicBg:C.privateBg}}>{post.status==="public"?<GlobeIcon/>:<LockIcon/>}{post.status==="public"?t('statusPublic'):t('statusPrivate')}</span>}
@@ -363,7 +363,7 @@ function Editor({ post, onSave, onBack }) {
       <div style={{display:"flex",border:`1px solid ${C.filterBorder}`,borderRadius:8,overflow:"hidden",marginBottom:24,width:"fit-content"}}>
         {["public","private"].map(s=><button key={s} onClick={()=>setStatus(s)} style={{display:"flex",alignItems:"center",gap:5,padding:"8px 16px",border:"none",cursor:"pointer",fontSize:13,fontWeight:600,background:status===s?C.textPrimary:C.filterBg,color:status===s?C.offWhite:C.textSecondary}}>{s==="public"?<GlobeIcon/>:<LockIcon/>}{s==="public"?t('statusPublic'):t('statusPrivate')}</button>)}
       </div>
-      <MultiPicker label={t('labelTopics')} options={TOPICS} colors={TOPIC_COLORS} selected={topics} onChange={setTopics}/>
+      <MultiPicker label={t('labelTopics')} options={TOPICS} colors={C.topicColors} selected={topics} onChange={setTopics}/>
       <MultiPicker label={t('labelRegion')} options={REGIONS} colors={REGION_COLORS} selected={regions} onChange={setRegions}/>
       <input value={title} onChange={e=>setTitle(e.target.value)} placeholder={t('placeholderTitle')} style={{width:"100%",boxSizing:"border-box",fontSize:32,fontWeight:700,fontFamily:"Georgia,serif",border:"none",borderBottom:`2px solid ${C.editorBorder}`,padding:"6px 0",marginBottom:14,outline:"none",color:C.textPrimary,background:"transparent",marginTop:10}}/>
       <textarea value={summary} onChange={e=>setSummary(e.target.value)} placeholder={t('placeholderSummary')} rows={2} style={{width:"100%",boxSizing:"border-box",fontSize:15,fontFamily:"Georgia,serif",fontStyle:"italic",color:C.summaryColor,border:"none",borderBottom:`1px solid ${C.editorBorder}`,padding:"6px 0",marginBottom:14,outline:"none",resize:"none",lineHeight:1.6,background:"transparent"}}/>
@@ -393,8 +393,8 @@ function Reader({ post, onEdit, onBack, isAdmin }) {
         {isAdmin&&<button onClick={onEdit} style={{display:"flex",alignItems:"center",gap:6,background:"none",border:`1px solid ${C.border}`,borderRadius:8,padding:"8px 16px",cursor:"pointer",fontSize:13,color:C.textPrimary,fontWeight:600}}><PenIcon/> Edit</button>}
       </div>
       <div style={{display:"flex",flexWrap:"wrap",gap:8,alignItems:"center",marginBottom:14}}>
-        {(post.topics||[]).map(tp=><span key={tp} style={{fontSize:10,fontWeight:700,letterSpacing:1.2,textTransform:"uppercase",color:TOPIC_COLORS[tp]||C.textSecondary,borderLeft:`3px solid ${TOPIC_COLORS[tp]||C.textSecondary}`,paddingLeft:9}}>{tp}</span>)}
-        {(post.regions||[]).map(r=><span key={r} style={{fontSize:10,fontWeight:600,letterSpacing:0.8,textTransform:"uppercase",color:REGION_COLORS[r]||C.privateGray,background:`${REGION_COLORS[r]}22`,padding:"3px 9px",borderRadius:10}}>{r}</span>)}
+        {(post.topics||[]).map(tp=><span key={tp} style={{fontSize:10,fontWeight:700,letterSpacing:1.2,textTransform:"uppercase",color:C.topicColors[tp]||C.textSecondary,borderLeft:`3px solid ${C.topicColors[tp]||C.textSecondary}`,paddingLeft:9}}>{t('topic:'+tp)}</span>)}
+        {(post.regions||[]).map(r=><span key={r} style={{fontSize:10,fontWeight:600,letterSpacing:0.8,textTransform:"uppercase",color:REGION_COLORS[r]||C.privateGray,background:`${REGION_COLORS[r]}22`,padding:"3px 9px",borderRadius:10}}>{t('region:'+r)}</span>)}
         {isAdmin&&<span style={{display:"flex",alignItems:"center",gap:4,fontSize:11,fontWeight:600,padding:"3px 9px",borderRadius:20,color:post.status==="public"?C.publicGreen:C.privateGray,background:post.status==="public"?C.publicBg:C.privateBg}}>{post.status==="public"?<GlobeIcon/>:<LockIcon/>}{post.status==="public"?t('statusPublic'):t('statusPrivate')}</span>}
       </div>
       <h1 style={{fontSize:40,fontWeight:700,lineHeight:1.2,margin:"0 0 16px",color:C.textPrimary,fontFamily:"Georgia,serif"}}>{post.title}</h1>
@@ -462,11 +462,21 @@ export default function App() {
     mq.addEventListener('change', handler);
     return () => mq.removeEventListener('change', handler);
   }, []);
-  const C = isDark ? DARK : LIGHT;
+  const C = { ...(isDark ? DARK : LIGHT), topicColors: isDark ? DARK_TOPIC_COLORS : TOPIC_COLORS };
 
   // ── Language state ──
   const [lang, setLang] = useState(() => localStorage.getItem('nb_lang') || 'en');
-  const t = key => (TRANSLATIONS[lang]?.[key]) ?? (TRANSLATIONS.en[key] ?? key);
+  const t = key => {
+    if (key.startsWith('topic:')) {
+      const tp = key.slice(6);
+      return TRANSLATIONS[lang]?.topicLabels?.[tp] || TRANSLATIONS.en.topicLabels[tp] || tp;
+    }
+    if (key.startsWith('region:')) {
+      const r = key.slice(7);
+      return TRANSLATIONS[lang]?.regionLabels?.[r] || TRANSLATIONS.en.regionLabels[r] || r;
+    }
+    return (TRANSLATIONS[lang]?.[key]) ?? (TRANSLATIONS.en[key] ?? key);
+  };
   useEffect(() => { localStorage.setItem('nb_lang', lang); }, [lang]);
 
   // ── Lang dropdown state ──
@@ -546,7 +556,7 @@ export default function App() {
           <div ref={langRef} style={{position:"relative"}}>
             <button onClick={()=>setLangOpen(o=>!o)} style={{display:"flex",alignItems:"center",gap:5,background:"none",border:`1px solid ${langOpen?C.border:"transparent"}`,borderRadius:7,padding:"5px 8px",cursor:"pointer",color:C.textMuted,fontSize:13,transition:"border-color .15s"}}>
               <LangIcon/>
-              <span style={{fontSize:12,fontWeight:600}}>{LANG_OPTIONS.find(l=>l.code===lang)?.flag}</span>
+              <span style={{fontSize:12,fontWeight:600}}>{lang.toUpperCase()}</span>
             </button>
             {langOpen&&(
               <div style={{position:"absolute",top:"calc(100% + 6px)",left:0,background:C.white,border:`1px solid ${C.border}`,borderRadius:10,boxShadow:"0 8px 28px rgba(0,0,0,.12)",minWidth:148,zIndex:200,overflow:"hidden"}}>

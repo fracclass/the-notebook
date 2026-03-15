@@ -57,7 +57,7 @@ export const DARK = {
   textPrimary:   "#ede8e2",
   textSecondary: "#a09488",
   textMuted:     "#6e6560",
-  textFaint:     "#4a4542",
+  textFaint:     "#706860",
   publicGreen:   "#2d9e5f",
   publicBg:      "#0d2e1a",
   privateGray:   "#888888",
@@ -77,10 +77,10 @@ export const DARK = {
   bodyText:      "#d8d0c8",
   readingTimeBg: "#262320",
   readingTimeText:"#6e6560",
-  metaText:      "#6e6560",
+  metaText:      "#8a8078",
   linkColor:     "#c8c0b8",
-  filterBg:      "#1e1c1a",
-  filterBgAlt:   "#1a1816",
+  filterBg:      "#2a2826",
+  filterBgAlt:   "#252220",
   filterBorder:  "#3a3735",
   filterBorderAlt:"#333030",
   editorBg:      "transparent",
@@ -115,6 +115,17 @@ export const TOPIC_COLORS = {
   "Environment":     "#2d6b1a",
   "Deep Dive":       "#111111",
   "Other":           "#555555",
+};
+
+// Lightened versions for dark backgrounds
+export const DARK_TOPIC_COLORS = {
+  "Energy":          "#c48a3a",
+  "Technology":      "#4a7ec4",
+  "Markets":         "#3aab6b",
+  "Consumer Trends": "#9a5ac4",
+  "Environment":     "#5aab3a",
+  "Deep Dive":       "#c8c0b8",
+  "Other":           "#a09488",
 };
 
 export const REGION_COLORS = {
@@ -195,6 +206,15 @@ export const TRANSLATIONS = {
     // Empty state
     comingSoon:      "New articles coming soon!",
     loading:         "Loading…",
+    topicLabels: {
+      "Energy":"Energy","Technology":"Technology","Markets":"Markets",
+      "Consumer Trends":"Consumer Trends","Environment":"Environment",
+      "Deep Dive":"Deep Dive","Other":"Other",
+    },
+    regionLabels: {
+      "Africa":"Africa","Americas":"Americas","Asia-Pacific":"Asia-Pacific",
+      "Europe":"Europe","Middle East":"Middle East","Global":"Global",
+    },
   },
   fr: {
     siteTitle:       "The Notebook",
@@ -255,6 +275,15 @@ export const TRANSLATIONS = {
     deleteConfirm:   "Supprimer cet article ?",
     comingSoon:      "De nouveaux articles arrivent bientôt !",
     loading:         "Chargement…",
+    topicLabels: {
+      "Energy":"Énergie","Technology":"Technologie","Markets":"Marchés",
+      "Consumer Trends":"Tendances","Environment":"Environnement",
+      "Deep Dive":"Analyse","Other":"Autre",
+    },
+    regionLabels: {
+      "Africa":"Afrique","Americas":"Amériques","Asia-Pacific":"Asie-Pacifique",
+      "Europe":"Europe","Middle East":"Moyen-Orient","Global":"Mondial",
+    },
   },
   es: {
     siteTitle:       "The Notebook",
@@ -315,6 +344,15 @@ export const TRANSLATIONS = {
     deleteConfirm:   "¿Eliminar este artículo?",
     comingSoon:      "¡Próximamente nuevos artículos!",
     loading:         "Cargando…",
+    topicLabels: {
+      "Energy":"Energía","Technology":"Tecnología","Markets":"Mercados",
+      "Consumer Trends":"Tendencias","Environment":"Medio ambiente",
+      "Deep Dive":"Análisis","Other":"Otro",
+    },
+    regionLabels: {
+      "Africa":"África","Americas":"Américas","Asia-Pacific":"Asia-Pacífico",
+      "Europe":"Europa","Middle East":"Oriente Medio","Global":"Global",
+    },
   },
   de: {
     siteTitle:       "The Notebook",
@@ -375,5 +413,14 @@ export const TRANSLATIONS = {
     deleteConfirm:   "Diesen Artikel löschen?",
     comingSoon:      "Neue Artikel kommen bald!",
     loading:         "Laden…",
+    topicLabels: {
+      "Energy":"Energie","Technology":"Technologie","Markets":"Märkte",
+      "Consumer Trends":"Verbrauchertrends","Environment":"Umwelt",
+      "Deep Dive":"Analyse","Other":"Sonstiges",
+    },
+    regionLabels: {
+      "Africa":"Afrika","Americas":"Amerika","Asia-Pacific":"Asien-Pazifik",
+      "Europe":"Europa","Middle East":"Naher Osten","Global":"Global",
+    },
   },
 };
