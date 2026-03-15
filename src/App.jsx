@@ -329,7 +329,7 @@ function Card({ post, onClick, onDelete, isAdmin }) {
         </div>
         <h2 style={{fontSize:19,fontWeight:700,lineHeight:1.3,margin:"0 0 9px",color:C.textPrimary,fontFamily:"Georgia,serif"}}>{post.title}</h2>
         <p style={{fontSize:14,color:C.textSecondary,lineHeight:1.6,margin:"0 0 18px"}}>{post.summary}</p>
-        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",fontSize:12,color:C.textFaint}}>
+        <div className="notranslate" style={{display:"flex",justifyContent:"space-between",alignItems:"center",fontSize:12,color:C.textFaint}}>
           <span>{post.author&&<span style={{color:C.metaText,marginRight:6}}>{post.author} · </span>}{fmt(post.updatedAt,t('locale'))}</span>
           <span style={{background:C.readingTimeBg,padding:"2px 8px",borderRadius:8,fontSize:11,fontWeight:600,color:C.readingTimeText}}>{readingTime(post.body)} {t('minRead')}</span>
         </div>
@@ -481,6 +481,11 @@ export default function App() {
 
   // Trigger Google Translate widget for article content
   const applyGoogleTranslate = (code) => {
+    if (code === 'en') {
+      // Clear the googtrans cookie so it doesn't re-apply on refresh
+      document.cookie = 'googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+      document.cookie = 'googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=.' + window.location.hostname;
+    }
     setTimeout(() => {
       const select = document.querySelector('.goog-te-combo');
       if (!select) return;
