@@ -110,7 +110,7 @@ function Sidebar({ isOpen, onClose, isAdmin, onLogin, onLogout, onNewArticle }) 
   return (
     <>
       {isOpen&&<div onClick={onClose} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.35)",zIndex:200}}/>}
-      <div style={{position:"fixed",top:0,left:0,height:"100vh",width:300,background:C.white,zIndex:201,boxShadow:isOpen?"4px 0 24px rgba(0,0,0,.08)":"none",transform:isOpen?"translateX(0)":"translateX(-100%)",transition:"transform .25s cubic-bezier(.4,0,.2,1)",display:"flex",flexDirection:"column",overflow:"hidden"}}>
+      <div className="notranslate" style={{position:"fixed",top:0,left:0,height:"100vh",width:300,background:C.white,zIndex:201,boxShadow:isOpen?"4px 0 24px rgba(0,0,0,.08)":"none",transform:isOpen?"translateX(0)":"translateX(-100%)",transition:"transform .25s cubic-bezier(.4,0,.2,1)",display:"flex",flexDirection:"column",overflow:"hidden"}}>
         <div style={{padding:"20px 20px 16px",borderBottom:`1px solid ${C.border}`,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
           <span style={{fontFamily:"Georgia,serif",fontWeight:800,fontSize:18,color:C.textPrimary,letterSpacing:"-0.3px"}}>{t('siteTitle')}</span>
           <button onClick={onClose} style={{background:"none",border:"none",cursor:"pointer",color:C.textFaint,padding:4,display:"flex"}}><XIcon/></button>
@@ -276,7 +276,7 @@ function FilterBar({ filterTopic,setFilterTopic,filterRegion,setFilterRegion,isA
   const C = useContext(ThemeCtx);
   const t = useContext(LangCtx);
   return (
-    <div style={{marginBottom:28}}>
+    <div className="notranslate" style={{marginBottom:28}}>
       <div style={{display:"flex",gap:10,marginBottom:14,flexWrap:"wrap",alignItems:"center"}}>
         <input value={search} onChange={e=>setSearch(e.target.value)} placeholder={t('searchPlaceholder')} style={{padding:"8px 14px",border:`1px solid ${C.filterBorder}`,borderRadius:8,fontSize:13,width:200,outline:"none",background:C.filterBg,color:C.textPrimary}}/>
         {isAdmin&&<div style={{display:"flex",border:`1px solid ${C.filterBorder}`,borderRadius:8,overflow:"hidden"}}>
@@ -317,7 +317,7 @@ function Card({ post, onClick, onDelete, isAdmin }) {
       onMouseLeave={e=>{e.currentTarget.style.boxShadow="0 1px 4px rgba(0,0,0,.04)";e.currentTarget.style.transform="none";}}>
       {thumb&&<div style={{height:160,overflow:"hidden",background:C.cardThumbBg}}><img src={thumb} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/></div>}
       <div style={{padding:"22px 24px"}}>
-        <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:10}}>
+        <div className="notranslate" style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:10}}>
           <div style={{display:"flex",flexWrap:"wrap",gap:5,flex:1}}>
             {(post.topics||[]).map(tp=><span key={tp} style={{fontSize:10,fontWeight:700,letterSpacing:1.1,textTransform:"uppercase",color:C.topicColors[tp]||C.textSecondary,borderLeft:`3px solid ${C.topicColors[tp]||C.textSecondary}`,paddingLeft:7}}>{t('topic:'+tp)}</span>)}
             {(post.regions||[]).map(r=><span key={r} style={{fontSize:10,fontWeight:600,letterSpacing:0.8,textTransform:"uppercase",color:REGION_COLORS[r]||C.privateGray,background:`${REGION_COLORS[r]}18`,padding:"2px 7px",borderRadius:10}}>{t('region:'+r)}</span>)}
@@ -388,18 +388,18 @@ function Reader({ post, onEdit, onBack, isAdmin }) {
   useEffect(()=>{ updateOGTags({title:post.title,description:post.summary,image:thumb}); return()=>updateOGTags({}); },[post.title,post.summary,thumb]);
   return (
     <div style={{maxWidth:740,margin:"0 auto",padding:"32px 0 100px"}}>
-      <div style={{display:"flex",justifyContent:"space-between",marginBottom:40}}>
+      <div className="notranslate" style={{display:"flex",justifyContent:"space-between",marginBottom:40}}>
         <button onClick={onBack} style={{display:"flex",alignItems:"center",gap:6,background:"none",border:`1px solid ${C.editorBorderStrong}`,borderRadius:8,padding:"8px 16px",cursor:"pointer",fontSize:13,color:C.textSecondary}}><BackIcon/> {t('back')}</button>
         {isAdmin&&<button onClick={onEdit} style={{display:"flex",alignItems:"center",gap:6,background:"none",border:`1px solid ${C.border}`,borderRadius:8,padding:"8px 16px",cursor:"pointer",fontSize:13,color:C.textPrimary,fontWeight:600}}><PenIcon/> {t('edit')}</button>}
       </div>
-      <div style={{display:"flex",flexWrap:"wrap",gap:8,alignItems:"center",marginBottom:14}}>
+      <div className="notranslate" style={{display:"flex",flexWrap:"wrap",gap:8,alignItems:"center",marginBottom:14}}>
         {(post.topics||[]).map(tp=><span key={tp} style={{fontSize:10,fontWeight:700,letterSpacing:1.2,textTransform:"uppercase",color:C.topicColors[tp]||C.textSecondary,borderLeft:`3px solid ${C.topicColors[tp]||C.textSecondary}`,paddingLeft:9}}>{t('topic:'+tp)}</span>)}
         {(post.regions||[]).map(r=><span key={r} style={{fontSize:10,fontWeight:600,letterSpacing:0.8,textTransform:"uppercase",color:REGION_COLORS[r]||C.privateGray,background:`${REGION_COLORS[r]}22`,padding:"3px 9px",borderRadius:10}}>{t('region:'+r)}</span>)}
         {isAdmin&&<span style={{display:"flex",alignItems:"center",gap:4,fontSize:11,fontWeight:600,padding:"3px 9px",borderRadius:20,color:post.status==="public"?C.publicGreen:C.privateGray,background:post.status==="public"?C.publicBg:C.privateBg}}>{post.status==="public"?<GlobeIcon/>:<LockIcon/>}{post.status==="public"?t('statusPublic'):t('statusPrivate')}</span>}
       </div>
       <h1 style={{fontSize:40,fontWeight:700,lineHeight:1.2,margin:"0 0 16px",color:C.textPrimary,fontFamily:"Georgia,serif"}}>{post.title}</h1>
       <p style={{fontSize:18,color:C.summaryColor,fontStyle:"italic",lineHeight:1.65,marginBottom:14,fontFamily:"Georgia,serif"}}>{post.summary}</p>
-      <div style={{fontSize:13,color:C.textFaint,marginBottom:40,paddingBottom:22,borderBottom:`1px solid ${C.editorBorder}`,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+      <div className="notranslate" style={{fontSize:13,color:C.textFaint,marginBottom:40,paddingBottom:22,borderBottom:`1px solid ${C.editorBorder}`,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
         <span>{post.author&&<span style={{fontWeight:600,color:C.textSecondary,marginRight:6}}>{t('by')} {post.author} · </span>}{fmt(post.createdAt,t('locale'))}{post.updatedAt!==post.createdAt&&<span> · {t('lastRevised')} {fmt(post.updatedAt,t('locale'))}</span>}</span>
         <span style={{background:C.readingTimeBg,padding:"3px 10px",borderRadius:8,fontSize:11,fontWeight:600,color:C.readingTimeText,flexShrink:0}}>{readingTime(post.body)} {t('minRead')}</span>
       </div>
@@ -424,7 +424,7 @@ function Footer() {
   const C = useContext(ThemeCtx);
   const t = useContext(LangCtx);
   return (
-    <footer style={{borderTop:`1px solid ${C.border}`,background:C.white,marginTop:80}}>
+    <footer className="notranslate" style={{borderTop:`1px solid ${C.border}`,background:C.white,marginTop:80}}>
       <div style={{maxWidth:1200,margin:"0 auto",padding:"28px 40px",display:"flex",flexWrap:"wrap",justifyContent:"space-between",alignItems:"center",gap:12}}>
         <div>
           <span style={{fontFamily:"Georgia,serif",fontWeight:800,fontSize:15,color:C.textPrimary,letterSpacing:"-0.3px"}}>{t('siteTitle')}</span>
@@ -478,6 +478,16 @@ export default function App() {
     return (TRANSLATIONS[lang]?.[key]) ?? (TRANSLATIONS.en[key] ?? key);
   };
   useEffect(() => { localStorage.setItem('nb_lang', lang); }, [lang]);
+
+  // Trigger Google Translate widget for article content
+  const applyGoogleTranslate = (code) => {
+    setTimeout(() => {
+      const select = document.querySelector('.goog-te-combo');
+      if (!select) return;
+      select.value = code === 'en' ? '' : code;
+      select.dispatchEvent(new Event('change'));
+    }, 200);
+  };
 
   // ── Lang dropdown state ──
   const [langOpen, setLangOpen] = useState(false);
@@ -543,7 +553,7 @@ export default function App() {
   );
 
   const Header = () => (
-    <header style={{background:C.white,borderBottom:`1px solid ${C.border}`,padding:"0 24px",position:"sticky",top:0,zIndex:100}}>
+    <header className="notranslate" style={{background:C.white,borderBottom:`1px solid ${C.border}`,padding:"0 24px",position:"sticky",top:0,zIndex:100}}>
       <div style={{width:"100%",display:"flex",alignItems:"center",justifyContent:"space-between",height:62}}>
         {/* Left side */}
         <div style={{display:"flex",alignItems:"center",gap:18}}>
@@ -561,7 +571,7 @@ export default function App() {
             {langOpen&&(
               <div style={{position:"absolute",top:"calc(100% + 6px)",left:0,background:C.white,border:`1px solid ${C.border}`,borderRadius:10,boxShadow:"0 8px 28px rgba(0,0,0,.12)",minWidth:148,zIndex:200,overflow:"hidden"}}>
                 {LANG_OPTIONS.map(l=>(
-                  <button key={l.code} onClick={()=>{setLang(l.code);setLangOpen(false);}}
+                  <button key={l.code} onClick={()=>{setLang(l.code);setLangOpen(false);applyGoogleTranslate(l.code);}}
                     style={{display:"flex",alignItems:"center",gap:10,width:"100%",padding:"9px 14px",background:lang===l.code?C.accentLight:"transparent",border:"none",cursor:"pointer",fontSize:13,fontWeight:lang===l.code?700:500,color:lang===l.code?C.accent:C.textSecondary,textAlign:"left",transition:"background .1s"}}>
                     <span style={{fontSize:11,fontWeight:700,opacity:0.55,minWidth:22,letterSpacing:0.5}}>{l.code.toUpperCase()}</span>{l.label}
                   </button>
