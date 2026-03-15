@@ -140,7 +140,7 @@ function Sidebar({ isOpen, onClose, isAdmin, onLogin, onLogout, onNewArticle }) 
           <div style={{padding:"20px",borderTop:"1px solid #ebebeb",background:"#faf9f7",fontSize:13,lineHeight:1.8,color:"#555"}}>
             <div style={{fontWeight:700,color:"#111",marginBottom:10,fontSize:14}}>About The Notebook</div>
             <p style={{margin:"0 0 10px"}}>The Notebook is an independent analysis publication. We write about the forces shaping economies, industries, and markets : from the energy transition to the technology shifts transforming the world as we know it.</p>
-            <p style={{margin:0}}>Our analysis is built on research, expert insight, data, and news — cross-referenced against the human reality behind the numbers. We write to understand, and to share what we find as clearly as possible.</p>
+            <p style={{margin:0}}>Our analysis is built on research, experts insight, data and latest news; cross-referenced against the human reality behind the numbers. We write to understand, and to share what we find as clearly as possible.</p>
           </div>
         )}
 
