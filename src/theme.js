@@ -206,6 +206,9 @@ export const TRANSLATIONS = {
     // Empty state
     comingSoon:      "New articles coming soon!",
     loading:         "Loading…",
+    minRead:         "min read",
+    edit:            "Edit",
+    locale:          "en-US",
     topicLabels: {
       "Energy":"Energy","Technology":"Technology","Markets":"Markets",
       "Consumer Trends":"Consumer Trends","Environment":"Environment",
@@ -275,6 +278,9 @@ export const TRANSLATIONS = {
     deleteConfirm:   "Supprimer cet article ?",
     comingSoon:      "De nouveaux articles arrivent bientôt !",
     loading:         "Chargement…",
+    minRead:         "min de lecture",
+    edit:            "Modifier",
+    locale:          "fr-FR",
     topicLabels: {
       "Energy":"Énergie","Technology":"Technologie","Markets":"Marchés",
       "Consumer Trends":"Tendances","Environment":"Environnement",
@@ -344,6 +350,9 @@ export const TRANSLATIONS = {
     deleteConfirm:   "¿Eliminar este artículo?",
     comingSoon:      "¡Próximamente nuevos artículos!",
     loading:         "Cargando…",
+    minRead:         "min de lectura",
+    edit:            "Editar",
+    locale:          "es-ES",
     topicLabels: {
       "Energy":"Energía","Technology":"Tecnología","Markets":"Mercados",
       "Consumer Trends":"Tendencias","Environment":"Medio ambiente",
@@ -413,6 +422,9 @@ export const TRANSLATIONS = {
     deleteConfirm:   "Diesen Artikel löschen?",
     comingSoon:      "Neue Artikel kommen bald!",
     loading:         "Laden…",
+    minRead:         "Min. Lesezeit",
+    edit:            "Bearbeiten",
+    locale:          "de-DE",
     topicLabels: {
       "Energy":"Energie","Technology":"Technologie","Markets":"Märkte",
       "Consumer Trends":"Verbrauchertrends","Environment":"Umwelt",

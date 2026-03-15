@@ -8,7 +8,7 @@ const TOPICS  = ["Energy","Technology","Markets","Consumer Trends","Environment"
 const REGIONS = ["Africa","Americas","Asia-Pacific","Europe","Middle East","Global"];
 
 const now = () => new Date().toISOString();
-const fmt = (iso) => new Date(iso).toLocaleDateString("en-US",{year:"numeric",month:"long",day:"numeric"});
+const fmt = (iso, locale="en-US") => new Date(iso).toLocaleDateString(locale,{year:"numeric",month:"long",day:"numeric"});
 const readingTime = (html) => {
   const words = (html||"").replace(/<[^>]+>/g,"").trim().split(/\s+/).filter(Boolean).length;
   return Math.max(1,Math.round(words/200));
@@ -330,8 +330,8 @@ function Card({ post, onClick, onDelete, isAdmin }) {
         <h2 style={{fontSize:19,fontWeight:700,lineHeight:1.3,margin:"0 0 9px",color:C.textPrimary,fontFamily:"Georgia,serif"}}>{post.title}</h2>
         <p style={{fontSize:14,color:C.textSecondary,lineHeight:1.6,margin:"0 0 18px"}}>{post.summary}</p>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",fontSize:12,color:C.textFaint}}>
-          <span>{post.author&&<span style={{color:C.metaText,marginRight:6}}>{post.author} · </span>}{fmt(post.updatedAt)}</span>
-          <span style={{background:C.readingTimeBg,padding:"2px 8px",borderRadius:8,fontSize:11,fontWeight:600,color:C.readingTimeText}}>{readingTime(post.body)} min read</span>
+          <span>{post.author&&<span style={{color:C.metaText,marginRight:6}}>{post.author} · </span>}{fmt(post.updatedAt,t('locale'))}</span>
+          <span style={{background:C.readingTimeBg,padding:"2px 8px",borderRadius:8,fontSize:11,fontWeight:600,color:C.readingTimeText}}>{readingTime(post.body)} {t('minRead')}</span>
         </div>
       </div>
     </div>
@@ -390,7 +390,7 @@ function Reader({ post, onEdit, onBack, isAdmin }) {
     <div style={{maxWidth:740,margin:"0 auto",padding:"32px 0 100px"}}>
       <div style={{display:"flex",justifyContent:"space-between",marginBottom:40}}>
         <button onClick={onBack} style={{display:"flex",alignItems:"center",gap:6,background:"none",border:`1px solid ${C.editorBorderStrong}`,borderRadius:8,padding:"8px 16px",cursor:"pointer",fontSize:13,color:C.textSecondary}}><BackIcon/> {t('back')}</button>
-        {isAdmin&&<button onClick={onEdit} style={{display:"flex",alignItems:"center",gap:6,background:"none",border:`1px solid ${C.border}`,borderRadius:8,padding:"8px 16px",cursor:"pointer",fontSize:13,color:C.textPrimary,fontWeight:600}}><PenIcon/> Edit</button>}
+        {isAdmin&&<button onClick={onEdit} style={{display:"flex",alignItems:"center",gap:6,background:"none",border:`1px solid ${C.border}`,borderRadius:8,padding:"8px 16px",cursor:"pointer",fontSize:13,color:C.textPrimary,fontWeight:600}}><PenIcon/> {t('edit')}</button>}
       </div>
       <div style={{display:"flex",flexWrap:"wrap",gap:8,alignItems:"center",marginBottom:14}}>
         {(post.topics||[]).map(tp=><span key={tp} style={{fontSize:10,fontWeight:700,letterSpacing:1.2,textTransform:"uppercase",color:C.topicColors[tp]||C.textSecondary,borderLeft:`3px solid ${C.topicColors[tp]||C.textSecondary}`,paddingLeft:9}}>{t('topic:'+tp)}</span>)}
@@ -400,8 +400,8 @@ function Reader({ post, onEdit, onBack, isAdmin }) {
       <h1 style={{fontSize:40,fontWeight:700,lineHeight:1.2,margin:"0 0 16px",color:C.textPrimary,fontFamily:"Georgia,serif"}}>{post.title}</h1>
       <p style={{fontSize:18,color:C.summaryColor,fontStyle:"italic",lineHeight:1.65,marginBottom:14,fontFamily:"Georgia,serif"}}>{post.summary}</p>
       <div style={{fontSize:13,color:C.textFaint,marginBottom:40,paddingBottom:22,borderBottom:`1px solid ${C.editorBorder}`,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-        <span>{post.author&&<span style={{fontWeight:600,color:C.textSecondary,marginRight:6}}>{t('by')} {post.author} · </span>}{fmt(post.createdAt)}{post.updatedAt!==post.createdAt&&<span> · {t('lastRevised')} {fmt(post.updatedAt)}</span>}</span>
-        <span style={{background:C.readingTimeBg,padding:"3px 10px",borderRadius:8,fontSize:11,fontWeight:600,color:C.readingTimeText,flexShrink:0}}>{readingTime(post.body)} min read</span>
+        <span>{post.author&&<span style={{fontWeight:600,color:C.textSecondary,marginRight:6}}>{t('by')} {post.author} · </span>}{fmt(post.createdAt,t('locale'))}{post.updatedAt!==post.createdAt&&<span> · {t('lastRevised')} {fmt(post.updatedAt,t('locale'))}</span>}</span>
+        <span style={{background:C.readingTimeBg,padding:"3px 10px",borderRadius:8,fontSize:11,fontWeight:600,color:C.readingTimeText,flexShrink:0}}>{readingTime(post.body)} {t('minRead')}</span>
       </div>
       <div style={{fontSize:17,lineHeight:1.85,color:C.bodyText,fontFamily:"Georgia,serif"}} dangerouslySetInnerHTML={{__html:post.body}}/>
       {post.sources?.length>0&&(
@@ -563,7 +563,7 @@ export default function App() {
                 {LANG_OPTIONS.map(l=>(
                   <button key={l.code} onClick={()=>{setLang(l.code);setLangOpen(false);}}
                     style={{display:"flex",alignItems:"center",gap:10,width:"100%",padding:"9px 14px",background:lang===l.code?C.accentLight:"transparent",border:"none",cursor:"pointer",fontSize:13,fontWeight:lang===l.code?700:500,color:lang===l.code?C.accent:C.textSecondary,textAlign:"left",transition:"background .1s"}}>
-                    <span style={{fontSize:16}}>{l.flag}</span>{l.label}
+                    <span style={{fontSize:11,fontWeight:700,opacity:0.55,minWidth:22,letterSpacing:0.5}}>{l.code.toUpperCase()}</span>{l.label}
                   </button>
                 ))}
               </div>
