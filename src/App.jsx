@@ -205,7 +205,7 @@ function ContactModal({ onClose }) {
               <div style={{display:"flex",flexWrap:"wrap",gap:7,marginTop:6}}>
                 {MSG_CATEGORIES.map(cat=>(
                   <button key={cat} onClick={()=>setCCategory(cat)}
-                    style={{padding:"5px 12px",borderRadius:20,border:`1.5px solid ${cCategory===cat?"#7a1e1e":C.border}`,background:cCategory===cat?"#f5e8e8":"transparent",color:cCategory===cat?"#7a1e1e":C.textSecondary,fontSize:12,fontWeight:600,cursor:"pointer",transition:"all .12s"}}>
+                    style={{padding:"5px 12px",borderRadius:20,border:`1.5px solid ${cCategory===cat?C.accent:C.border}`,background:cCategory===cat?C.accentLight:"transparent",color:cCategory===cat?C.accent:C.textSecondary,fontSize:12,fontWeight:600,cursor:"pointer",transition:"all .12s"}}>
                     {cat}
                   </button>
                 ))}
@@ -230,7 +230,7 @@ function ContactModal({ onClose }) {
             </div>
             {cError&&<div style={{color:"#c0392b",fontSize:12,marginBottom:10}}>{cError}</div>}
             <button onClick={sendContact} disabled={sending||!cName.trim()||!cEmail.trim()||!cMessage.trim()}
-              style={{width:"100%",padding:"11px",background:"#7a1e1e",color:"#fff",border:"none",borderRadius:8,fontSize:14,fontWeight:700,cursor:"pointer",opacity:(sending||!cName.trim()||!cEmail.trim()||!cMessage.trim())?0.6:1,transition:"opacity .15s"}}>
+              style={{width:"100%",padding:"11px",background:C.accent,color:"#fff",border:"none",borderRadius:8,fontSize:14,fontWeight:700,cursor:"pointer",opacity:(sending||!cName.trim()||!cEmail.trim()||!cMessage.trim())?0.6:1,transition:"opacity .15s"}}>
               {sending?"Sending…":t('sendMessage')}
             </button>
           </>
