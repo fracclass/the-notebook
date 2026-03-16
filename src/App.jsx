@@ -65,6 +65,31 @@ async function apiDeletePost(id) {
     });
   } catch {}
 }
+async function apiGetMessages() {
+  try {
+    const r = await fetch("/api/messages-get");
+    const d = await r.json();
+    return d.messages || [];
+  } catch { return []; }
+}
+async function apiPostMessage(msg) {
+  try {
+    await fetch("/api/messages-post", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(msg)
+    });
+  } catch {}
+}
+async function apiSetMessages(messages) {
+  try {
+    await fetch("/api/messages-set", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ messages })
+    });
+  } catch {}
+}
 
 function initAuth() {
   try { return localStorage.getItem("nb_auth") === "true"; } catch { return false; }
@@ -87,24 +112,16 @@ function updateOGTags({ title, description, image } = {}) {
 }
 
 // ── Sidebar ───────────────────────────────────────────────────────────────────
-function Sidebar({ isOpen, onClose, isAdmin, onLogin, onLogout, onNewArticle }) {
+function Sidebar({ isOpen, onClose, isAdmin, onLogin, onLogout, onNewArticle, onContact, onMessages, unreadCount }) {
   const C = useContext(ThemeCtx);
   const t = useContext(LangCtx);
   const [panel, setPanel] = useState(null);
-  const [cName,setCName]=useState(""); const [cEmail,setCEmail]=useState("");
-  const [cSubject,setCSubject]=useState(""); const [cMessage,setCMessage]=useState("");
-  const [cSent,setCSent]=useState(false);
 
-  const sendContact = () => {
-    if (!cName.trim()||!cEmail.trim()||!cMessage.trim()) return;
-    window.open(`mailto:contact@thenotebook.press?subject=${encodeURIComponent(cSubject||"Message from thenotebook.press")}&body=${encodeURIComponent(`Name: ${cName}\nEmail: ${cEmail}\n\n${cMessage}`)}`);
-    setCSent(true);
-    setTimeout(()=>{setCSent(false);setCName("");setCEmail("");setCSubject("");setCMessage("");},4000);
-  };
-
-  const navBtn=(label,icon,onClick,active)=>(
+  const navBtn=(label,icon,onClick,active,badge)=>(
     <button onClick={onClick} style={{display:"flex",alignItems:"center",gap:12,width:"100%",padding:"11px 16px",background:active?C.accentLight:"transparent",border:"none",borderRadius:8,cursor:"pointer",fontSize:14,fontWeight:600,color:active?C.accent:C.textSecondary,textAlign:"left",transition:"all .15s"}}>
-      <span style={{color:active?C.accent:C.textMuted}}>{icon}</span>{label}
+      <span style={{color:active?C.accent:C.textMuted}}>{icon}</span>
+      <span style={{flex:1}}>{label}</span>
+      {badge>0&&<span style={{background:C.accent,color:"#fff",borderRadius:10,fontSize:10,fontWeight:700,padding:"1px 6px",minWidth:16,textAlign:"center"}}>{badge}</span>}
     </button>
   );
 
@@ -120,13 +137,14 @@ function Sidebar({ isOpen, onClose, isAdmin, onLogin, onLogout, onNewArticle }) 
           {isAdmin&&<>
             <div style={{fontSize:10,fontWeight:700,letterSpacing:1.2,textTransform:"uppercase",color:C.textFaint,padding:"8px 16px 4px"}}>{t('adminSection')}</div>
             {navBtn(t('newArticle'),<PlusIcon/>,()=>{onNewArticle();onClose();},false)}
+            {navBtn("Messages",<MailIcon/>,()=>{onMessages();onClose();},false,unreadCount)}
             {navBtn(t('logout'),<LogoutIcon/>,()=>{onLogout();onClose();},false)}
           </>}
           {!isAdmin&&navBtn(t('login'),<LoginIcon/>,()=>{onLogin();onClose();},false)}
           <div style={{height:1,background:C.border,margin:"12px 0"}}/>
           <div style={{fontSize:10,fontWeight:700,letterSpacing:1.2,textTransform:"uppercase",color:C.textFaint,padding:"8px 16px 4px"}}>{t('publicationSection')}</div>
           {navBtn(t('about'),<InfoIcon/>,()=>setPanel(panel==="about"?null:"about"),panel==="about")}
-          {navBtn(t('contact'),<MailIcon/>,()=>setPanel(panel==="contact"?null:"contact"),panel==="contact")}
+          {navBtn(t('contact'),<MailIcon/>,()=>{onClose();onContact();},false)}
         </nav>
         {panel==="about"&&(
           <div style={{padding:"20px",borderTop:`1px solid ${C.border}`,background:C.offWhite,fontSize:13,lineHeight:1.8,color:C.textSecondary}}>
@@ -135,29 +153,90 @@ function Sidebar({ isOpen, onClose, isAdmin, onLogin, onLogout, onNewArticle }) 
             <p style={{margin:0}}>{t('aboutP2')}</p>
           </div>
         )}
-        {panel==="contact"&&(
-          <div style={{padding:"20px",borderTop:`1px solid ${C.border}`,background:C.offWhite}}>
-            <div style={{fontWeight:700,color:C.textPrimary,marginBottom:14,fontSize:14}}>{t('contactHeading')}</div>
-            {cSent?<div style={{textAlign:"center",padding:"20px 0",color:C.accent,fontWeight:600,fontSize:14}}>{t('contactSent')}</div>:(
-              <>
-                {[[t('fieldName'),cName,setCName,t('placeholderName'),"text"],[t('fieldEmail'),cEmail,setCEmail,t('placeholderEmail'),"email"],[t('fieldSubject'),cSubject,setCSubject,t('placeholderSubject'),"text"]].map(([l,v,s,p,tp])=>(
-                  <div key={l} style={{marginBottom:10}}>
-                    <div style={{fontSize:11,fontWeight:700,color:C.textMuted,marginBottom:4}}>{l}</div>
-                    <input type={tp} value={v} onChange={e=>s(e.target.value)} placeholder={p} style={{width:"100%",boxSizing:"border-box",padding:"8px 10px",border:`1px solid ${C.border}`,borderRadius:6,fontSize:13,outline:"none",background:C.inputBg,color:C.textPrimary}}/>
-                  </div>
-                ))}
-                <div style={{marginBottom:12}}>
-                  <div style={{fontSize:11,fontWeight:700,color:C.textMuted,marginBottom:4}}>{t('fieldMessage')}</div>
-                  <textarea value={cMessage} onChange={e=>setCMessage(e.target.value)} placeholder={t('placeholderMessage')} rows={4} style={{width:"100%",boxSizing:"border-box",padding:"8px 10px",border:`1px solid ${C.border}`,borderRadius:6,fontSize:13,outline:"none",resize:"vertical",background:C.inputBg,color:C.textPrimary,lineHeight:1.5}}/>
-                </div>
-                <button onClick={sendContact} style={{width:"100%",padding:"10px",background:C.accent,color:"#fff",border:"none",borderRadius:7,fontSize:13,fontWeight:700,cursor:"pointer"}}>{t('sendMessage')}</button>
-              </>
-            )}
-          </div>
-        )}
         <div style={{padding:"14px 20px",borderTop:`1px solid ${C.border}`,fontSize:11,color:C.textFaint}}>© {new Date().getFullYear()} The Notebook</div>
       </div>
     </>
+  );
+}
+
+const MSG_CATEGORIES = ["Collaboration","Expertise on a subject","Feedback / Comment","Other"];
+
+// ── Contact Modal ─────────────────────────────────────────────────────────────
+function ContactModal({ onClose }) {
+  const C = useContext(ThemeCtx);
+  const t = useContext(LangCtx);
+  const [cName,setCName]         = useState("");
+  const [cEmail,setCEmail]       = useState("");
+  const [cCategory,setCCategory] = useState(MSG_CATEGORIES[0]);
+  const [cMessage,setCMessage]   = useState("");
+  const [cSent,setCSent]         = useState(false);
+  const [cError,setCError]       = useState("");
+  const [sending,setSending]     = useState(false);
+
+  const sendContact = async () => {
+    if (!cName.trim()||!cEmail.trim()||!cMessage.trim()) return;
+    setSending(true); setCError("");
+    try {
+      await apiPostMessage({ name:cName, email:cEmail, category:cCategory, message:cMessage });
+      setCSent(true);
+      setTimeout(()=>{ onClose(); }, 3000);
+    } catch { setCError("Could not send. Please try again."); }
+    setSending(false);
+  };
+
+  const fieldStyle = {width:"100%",boxSizing:"border-box",padding:"9px 12px",border:`1px solid ${C.border}`,borderRadius:7,fontSize:14,outline:"none",background:C.inputBg,color:C.textPrimary};
+  const labelStyle = {fontSize:11,fontWeight:700,color:C.textMuted,marginBottom:4,textTransform:"uppercase",letterSpacing:0.5};
+
+  return (
+    <div className="notranslate" style={{position:"fixed",inset:0,zIndex:400,display:"flex",alignItems:"center",justifyContent:"center"}}>
+      <div onClick={onClose} style={{position:"absolute",inset:0,background:"rgba(0,0,0,.45)"}}/>
+      <div style={{position:"relative",background:C.white,borderRadius:14,boxShadow:"0 20px 60px rgba(0,0,0,.2)",width:"100%",maxWidth:480,margin:"0 16px",padding:"28px 28px 24px",boxSizing:"border-box"}}>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:20}}>
+          <div style={{fontFamily:"Georgia,serif",fontWeight:800,fontSize:18,color:C.textPrimary}}>{t('contactHeading')}</div>
+          <button onClick={onClose} style={{background:"none",border:"none",cursor:"pointer",color:C.textFaint,padding:4,display:"flex",borderRadius:6}}><XIcon/></button>
+        </div>
+        {cSent ? (
+          <div style={{textAlign:"center",padding:"32px 0",color:C.accent,fontWeight:600,fontSize:15}}>✓ {t('contactSent')}</div>
+        ) : (
+          <>
+            {/* Category pills */}
+            <div style={{marginBottom:16}}>
+              <div style={labelStyle}>Topic</div>
+              <div style={{display:"flex",flexWrap:"wrap",gap:7,marginTop:6}}>
+                {MSG_CATEGORIES.map(cat=>(
+                  <button key={cat} onClick={()=>setCCategory(cat)}
+                    style={{padding:"5px 12px",borderRadius:20,border:`1.5px solid ${cCategory===cat?C.accent:C.border}`,background:cCategory===cat?C.accentLight:"transparent",color:cCategory===cat?C.accent:C.textSecondary,fontSize:12,fontWeight:600,cursor:"pointer",transition:"all .12s"}}>
+                    {cat}
+                  </button>
+                ))}
+              </div>
+            </div>
+            {/* Name + Email */}
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:12}}>
+              <div>
+                <div style={labelStyle}>{t('fieldName')}</div>
+                <input value={cName} onChange={e=>setCName(e.target.value)} placeholder={t('placeholderName')} style={fieldStyle}/>
+              </div>
+              <div>
+                <div style={labelStyle}>{t('fieldEmail')}</div>
+                <input type="email" value={cEmail} onChange={e=>setCEmail(e.target.value)} placeholder={t('placeholderEmail')} style={fieldStyle}/>
+              </div>
+            </div>
+            {/* Message */}
+            <div style={{marginBottom:16}}>
+              <div style={labelStyle}>{t('fieldMessage')}</div>
+              <textarea value={cMessage} onChange={e=>setCMessage(e.target.value)} placeholder={t('placeholderMessage')} rows={4}
+                style={{...fieldStyle,resize:"vertical",lineHeight:1.5}}/>
+            </div>
+            {cError&&<div style={{color:"#c0392b",fontSize:12,marginBottom:10}}>{cError}</div>}
+            <button onClick={sendContact} disabled={sending||!cName.trim()||!cEmail.trim()||!cMessage.trim()}
+              style={{width:"100%",padding:"11px",background:C.accent,color:"#fff",border:"none",borderRadius:8,fontSize:14,fontWeight:700,cursor:"pointer",opacity:(sending||!cName.trim()||!cEmail.trim()||!cMessage.trim())?0.6:1,transition:"opacity .15s"}}>
+              {sending?"Sending…":t('sendMessage')}
+            </button>
+          </>
+        )}
+      </div>
+    </div>
   );
 }
 
@@ -501,7 +580,8 @@ export default function App() {
   const [search,setSearch]   = useState("");
   const [isAdmin,setIsAdmin] = useState(initAuth);
   const [showLogin,setShowLogin] = useState(false);
-  const [sidebarOpen,setSidebarOpen] = useState(false);
+  const [sidebarOpen,setSidebarOpen]   = useState(false);
+  const [showContact,setShowContact]   = useState(false);
 
   useEffect(()=>{
     apiGetPosts().then(data=>{ setPosts(data||SAMPLE); setLoading(false); });
@@ -525,8 +605,32 @@ export default function App() {
   };
 
   const activePost = posts.find(p=>p.id===activeId)||{};
-  const handleLogin  = (token) => { setIsAdmin(true); try{localStorage.setItem("nb_auth","true");localStorage.setItem("nb_token",token);}catch{} setShowLogin(false); };
-  const handleLogout = ()      => { setIsAdmin(false); try{localStorage.removeItem("nb_auth");localStorage.removeItem("nb_token");}catch{}; };
+
+  // ── Messages (admin inbox) ──
+  const [messages, setMessages] = useState([]);
+  const unreadCount = messages.filter(m=>!m.read).length;
+
+  const handleLogin = (token) => {
+    setIsAdmin(true);
+    try{localStorage.setItem("nb_auth","true");localStorage.setItem("nb_token",token);}catch{}
+    setShowLogin(false);
+    apiGetMessages().then(msgs => setMessages(msgs));
+  };
+  const handleLogout = () => {
+    setIsAdmin(false);
+    setMessages([]);
+    try{localStorage.removeItem("nb_auth");localStorage.removeItem("nb_token");}catch{}
+  };
+  const handleMarkRead = async (id) => {
+    const updated = messages.map(m => m.id===id ? {...m, read:true} : m);
+    setMessages(updated);
+    await apiSetMessages(updated);
+  };
+  const handleMarkAllRead = async () => {
+    const updated = messages.map(m => ({...m, read:true}));
+    setMessages(updated);
+    await apiSetMessages(updated);
+  };
 
   const visiblePosts = posts.filter(p=>isAdmin?true:p.status==="public");
   const visible = visiblePosts.filter(p=>{
@@ -542,7 +646,10 @@ export default function App() {
     <Sidebar isOpen={sidebarOpen} onClose={()=>setSidebarOpen(false)} isAdmin={isAdmin}
       onLogin={()=>{setSidebarOpen(false);setShowLogin(true);}}
       onLogout={()=>{handleLogout();setSidebarOpen(false);}}
-      onNewArticle={()=>{setActiveId(null);setView("new");}}/>
+      onNewArticle={()=>{setActiveId(null);setView("new");}}
+      onContact={()=>setShowContact(true)}
+      onMessages={()=>setView("messages")}
+      unreadCount={unreadCount}/>
   );
 
   const Header = () => (
@@ -598,7 +705,7 @@ export default function App() {
       <LangCtx.Provider value={t}>
         {view==="read"&&(
           <div style={{minHeight:"100vh",width:"100%",background:C.offWhite,display:"flex",flexDirection:"column"}}>
-            {sidebar}{showLogin&&<LoginModal onLogin={handleLogin} onClose={()=>setShowLogin(false)}/>}
+            {sidebar}{showLogin&&<LoginModal onLogin={handleLogin} onClose={()=>setShowLogin(false)}/>}{showContact&&<ContactModal onClose={()=>setShowContact(false)}/>}
             <Header/>
             <div style={{flex:1,padding:"36px 48px"}}><Reader post={activePost} onBack={()=>setView("home")} onEdit={()=>setView("edit")} isAdmin={isAdmin}/></div>
             <Footer/>
@@ -610,9 +717,59 @@ export default function App() {
             <Editor post={view==="new"?{}:activePost} onSave={p=>{handleSave(p);setActiveId(p.id);setView("read");}} onBack={()=>setView(activeId?"read":"home")}/>
           </div>
         )}
+        {view==="messages"&&isAdmin&&(
+          <div style={{minHeight:"100vh",width:"100%",background:C.offWhite,display:"flex",flexDirection:"column"}}>
+            {sidebar}{showContact&&<ContactModal onClose={()=>setShowContact(false)}/>}
+            <Header/>
+            <main style={{flex:1,maxWidth:720,width:"100%",margin:"0 auto",boxSizing:"border-box",padding:"36px 24px"}}>
+              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:28}}>
+                <div>
+                  <h1 style={{margin:0,fontSize:24,fontFamily:"Georgia,serif",fontWeight:800,color:C.textPrimary}}>Messages</h1>
+                  {unreadCount>0&&<div style={{fontSize:13,color:C.metaText,marginTop:4}}>{unreadCount} unread</div>}
+                </div>
+                {unreadCount>0&&(
+                  <button onClick={handleMarkAllRead} style={{padding:"7px 14px",background:"transparent",border:`1px solid ${C.border}`,borderRadius:7,fontSize:12,fontWeight:600,color:C.textMuted,cursor:"pointer"}}>
+                    Mark all read
+                  </button>
+                )}
+              </div>
+              {messages.length===0?(
+                <div style={{textAlign:"center",padding:"80px 0",color:C.metaText,fontSize:15}}>No messages yet.</div>
+              ):(
+                MSG_CATEGORIES.map(cat=>{
+                  const catMsgs = messages.filter(m=>m.category===cat);
+                  if(catMsgs.length===0) return null;
+                  return (
+                    <div key={cat} style={{marginBottom:36}}>
+                      <div style={{fontSize:11,fontWeight:700,letterSpacing:1.2,textTransform:"uppercase",color:C.textFaint,marginBottom:12,paddingBottom:6,borderBottom:`1px solid ${C.border}`}}>
+                        {cat} <span style={{fontWeight:400,opacity:0.6}}>({catMsgs.length})</span>
+                      </div>
+                      {catMsgs.map(msg=>(
+                        <div key={msg.id} onClick={()=>handleMarkRead(msg.id)}
+                          style={{background:C.white,border:`1px solid ${msg.read?C.border:C.accent}`,borderRadius:10,padding:"16px 18px",marginBottom:10,cursor:"pointer",opacity:msg.read?0.7:1,transition:"opacity .15s"}}>
+                          <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8}}>
+                            <div>
+                              <span style={{fontWeight:700,fontSize:14,color:C.textPrimary}}>{msg.name}</span>
+                              <span style={{fontSize:12,color:C.metaText,marginLeft:8}}>{msg.email}</span>
+                            </div>
+                            <div style={{display:"flex",alignItems:"center",gap:8}}>
+                              {!msg.read&&<span style={{width:7,height:7,borderRadius:"50%",background:C.accent,display:"inline-block"}}/>}
+                              <span style={{fontSize:11,color:C.textFaint}}>{new Date(msg.createdAt).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"})}</span>
+                            </div>
+                          </div>
+                          <div style={{fontSize:14,color:C.textSecondary,lineHeight:1.6}}>{msg.message}</div>
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })
+              )}
+            </main>
+          </div>
+        )}
         {view==="home"&&(
           <div style={{minHeight:"100vh",width:"100%",background:C.offWhite,fontFamily:"system-ui,sans-serif",display:"flex",flexDirection:"column"}}>
-            {sidebar}{showLogin&&<LoginModal onLogin={handleLogin} onClose={()=>setShowLogin(false)}/>}
+            {sidebar}{showLogin&&<LoginModal onLogin={handleLogin} onClose={()=>setShowLogin(false)}/>}{showContact&&<ContactModal onClose={()=>setShowContact(false)}/>}
             <Header/>
             <main style={{flex:1,width:"100%",boxSizing:"border-box",padding:"34px 40px"}}>
               <FilterBar filterTopic={filterTopic} setFilterTopic={setFilterTopic} filterRegion={filterRegion} setFilterRegion={setFilterRegion} isAdmin={isAdmin} filterStatus={filterStatus} setFilterStatus={setFilterStatus} search={search} setSearch={setSearch}/>
