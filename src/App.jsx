@@ -404,7 +404,7 @@ function Reader({ post, onEdit, onBack, isAdmin }) {
         <span>{post.author&&<span style={{fontWeight:600,color:C.textSecondary,marginRight:6}}>{t('by')} {post.author} · </span>}{fmt(post.createdAt,t('locale'))}{post.updatedAt!==post.createdAt&&<span> · {t('lastRevised')} {fmt(post.updatedAt,t('locale'))}</span>}</span>
         <span style={{background:C.readingTimeBg,padding:"3px 10px",borderRadius:8,fontSize:11,fontWeight:600,color:C.readingTimeText,flexShrink:0}}>{readingTime(post.body)} {t('minRead')}</span>
       </div>
-      <div style={{fontSize:17,lineHeight:1.85,color:C.bodyText,fontFamily:"Georgia,serif"}} dangerouslySetInnerHTML={{__html:post.body}}/>
+      <div className="article-body" style={{fontSize:17,lineHeight:1.85,color:C.bodyText,fontFamily:"Georgia,serif"}} dangerouslySetInnerHTML={{__html:post.body}}/>
       {post.sources?.length>0&&(
         <div style={{marginTop:52,paddingTop:26,borderTop:`1px solid ${C.editorBorder}`}}>
           <div style={{fontSize:10,fontWeight:700,letterSpacing:1.2,textTransform:"uppercase",color:C.textFaint,marginBottom:16}}>{t('labelSources')}</div>
@@ -479,21 +479,7 @@ export default function App() {
     return (TRANSLATIONS[lang]?.[key]) ?? (TRANSLATIONS.en[key] ?? key);
   };
   useEffect(() => { localStorage.setItem('nb_lang', lang); }, [lang]);
-
-  // Trigger Google Translate widget for article content
-  const applyGoogleTranslate = (code) => {
-    if (code === 'en') {
-      // Clear the googtrans cookie so it doesn't re-apply on refresh
-      document.cookie = 'googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
-      document.cookie = 'googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=.' + window.location.hostname;
-    }
-    setTimeout(() => {
-      const select = document.querySelector('.goog-te-combo');
-      if (!select) return;
-      select.value = code === 'en' ? '' : code;
-      select.dispatchEvent(new Event('change'));
-    }, 200);
-  };
+  useEffect(() => { document.body.classList.toggle('dark-mode', isDark); }, [isDark]);
 
   // ── Lang dropdown state ──
   const [langOpen, setLangOpen] = useState(false);
@@ -523,8 +509,6 @@ export default function App() {
 
   useEffect(()=>{ if(view==="home") updateOGTags({}); },[view]);
 
-  // Re-apply Google Translate when navigating between views (SPA navigation)
-  useEffect(() => { if (lang !== 'en') applyGoogleTranslate(lang); }, [view, activeId]);
 
   const handleSave = async (p) => {
     const updated = posts.find(x=>x.id===p.id)
@@ -580,7 +564,7 @@ export default function App() {
             {langOpen&&(
               <div style={{position:"absolute",top:"calc(100% + 6px)",left:0,background:C.white,border:`1px solid ${C.border}`,borderRadius:10,boxShadow:"0 8px 28px rgba(0,0,0,.12)",minWidth:148,zIndex:200,overflow:"hidden"}}>
                 {LANG_OPTIONS.map(l=>(
-                  <button key={l.code} onClick={()=>{setLang(l.code);setLangOpen(false);applyGoogleTranslate(l.code);}}
+                  <button key={l.code} onClick={()=>{setLang(l.code);setLangOpen(false);}}
                     style={{display:"flex",alignItems:"center",gap:10,width:"100%",padding:"9px 14px",background:lang===l.code?C.accentLight:"transparent",border:"none",cursor:"pointer",fontSize:13,fontWeight:lang===l.code?700:500,color:lang===l.code?C.accent:C.textSecondary,textAlign:"left",transition:"background .1s"}}>
                     <span style={{fontSize:11,fontWeight:700,opacity:0.55,minWidth:22,letterSpacing:0.5}}>{l.code.toUpperCase()}</span>{l.label}
                   </button>
