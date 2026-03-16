@@ -470,11 +470,14 @@ function Editor({ post, onSave, onBack }) {
 }
 
 const TRANSLATE_LANGS = [{code:"fr",label:"Français"},{code:"es",label:"Español"},{code:"de",label:"Deutsch"}];
+const clearGTCookies = () => {
+  const expired = '; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+  document.cookie = 'googtrans=' + expired;
+  document.cookie = 'googtrans=' + expired + ' domain=.' + window.location.hostname;
+  document.cookie = 'googtrans=' + expired + ' domain=' + window.location.hostname;
+};
 const applyGoogleTranslate = (code, attempt = 0) => {
-  if (code === 'en') {
-    document.cookie = 'googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
-    document.cookie = 'googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=.' + window.location.hostname;
-  }
+  if (code === 'en') clearGTCookies();
   const select = document.querySelector('.goog-te-combo');
   if (select) {
     select.value = code === 'en' ? '' : code;
@@ -483,9 +486,8 @@ const applyGoogleTranslate = (code, attempt = 0) => {
     setTimeout(() => {
       const s2 = document.querySelector('.goog-te-combo');
       if (s2) { s2.value = code === 'en' ? '' : code; s2.dispatchEvent(new Event('change')); }
-    }, 300);
+    }, 350);
   } else if (attempt < 10) {
-    // Widget not ready yet — retry every 250ms, up to 10 times (~2.5s total)
     setTimeout(() => applyGoogleTranslate(code, attempt + 1), 250);
   }
 };
@@ -509,10 +511,10 @@ function Reader({ post, onEdit, onBack, isAdmin }) {
 
   const handleBack = () => {
     if (txLang) {
-      // Was translating — reset GT first, then navigate after it fires
+      // Was translating — reset GT, clear cookies, then navigate after GT has fired
       applyGoogleTranslate('en');
       setTxLang(null);
-      setTimeout(() => onBack(), 400);
+      setTimeout(() => { clearGTCookies(); onBack(); }, 700);
     } else {
       onBack();
     }
@@ -644,7 +646,9 @@ export default function App() {
     apiGetPosts().then(data=>{ setPosts(data||SAMPLE); setLoading(false); });
   },[]);
 
-  useEffect(()=>{ if(view==="home") updateOGTags({}); },[view]);
+  useEffect(()=>{
+    if(view==="home") { updateOGTags({}); clearGTCookies(); }
+  },[view]);
 
 
   const handleSave = async (p) => {
