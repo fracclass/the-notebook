@@ -416,8 +416,8 @@ function Card({ post, onClick, onDelete, isAdmin }) {
             {isAdmin&&<button onClick={e=>{e.stopPropagation();if(window.confirm(t('deleteConfirm')))onDelete(post.id);}} style={{background:"none",border:"none",cursor:"pointer",color:C.filterBorder,padding:2}}><TrashIcon/></button>}
           </div>
         </div>
-        <h2 style={{fontSize:19,fontWeight:700,lineHeight:1.3,margin:"0 0 9px",color:C.textPrimary,fontFamily:"Georgia,serif"}}>{post.title}</h2>
-        <p style={{fontSize:14,color:C.textSecondary,lineHeight:1.6,margin:"0 0 18px"}}>{post.summary}</p>
+        <h2 className="notranslate" style={{fontSize:19,fontWeight:700,lineHeight:1.3,margin:"0 0 9px",color:C.textPrimary,fontFamily:"Georgia,serif"}}>{post.title}</h2>
+        <p className="notranslate" style={{fontSize:14,color:C.textSecondary,lineHeight:1.6,margin:"0 0 18px"}}>{post.summary}</p>
         <div className="notranslate" style={{display:"flex",justifyContent:"space-between",alignItems:"center",fontSize:12,color:C.textFaint}}>
           <span>{post.author&&<span style={{color:C.metaText,marginRight:6}}>{post.author} · </span>}{fmt(post.updatedAt,t('locale'))}</span>
           <span style={{background:C.readingTimeBg,padding:"2px 8px",borderRadius:8,fontSize:11,fontWeight:600,color:C.readingTimeText}}>{readingTime(post.body)} {t('minRead')}</span>
@@ -470,17 +470,24 @@ function Editor({ post, onSave, onBack }) {
 }
 
 const TRANSLATE_LANGS = [{code:"fr",label:"Français"},{code:"es",label:"Español"},{code:"de",label:"Deutsch"}];
-const applyGoogleTranslate = (code) => {
+const applyGoogleTranslate = (code, attempt = 0) => {
   if (code === 'en') {
     document.cookie = 'googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
     document.cookie = 'googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=.' + window.location.hostname;
   }
-  setTimeout(() => {
-    const select = document.querySelector('.goog-te-combo');
-    if (!select) return;
+  const select = document.querySelector('.goog-te-combo');
+  if (select) {
     select.value = code === 'en' ? '' : code;
     select.dispatchEvent(new Event('change'));
-  }, 200);
+    // Double-fire: GT sometimes needs a second nudge
+    setTimeout(() => {
+      const s2 = document.querySelector('.goog-te-combo');
+      if (s2) { s2.value = code === 'en' ? '' : code; s2.dispatchEvent(new Event('change')); }
+    }, 300);
+  } else if (attempt < 10) {
+    // Widget not ready yet — retry every 250ms, up to 10 times (~2.5s total)
+    setTimeout(() => applyGoogleTranslate(code, attempt + 1), 250);
+  }
 };
 
 // ── Reader ────────────────────────────────────────────────────────────────────
@@ -500,7 +507,16 @@ function Reader({ post, onEdit, onBack, isAdmin }) {
   // Reset translation when unmounting (user navigates back)
   useEffect(()=>()=>applyGoogleTranslate('en'), []);
 
-  const handleBack = () => { applyGoogleTranslate('en'); setTxLang(null); onBack(); };
+  const handleBack = () => {
+    if (txLang) {
+      // Was translating — reset GT first, then navigate after it fires
+      applyGoogleTranslate('en');
+      setTxLang(null);
+      setTimeout(() => onBack(), 400);
+    } else {
+      onBack();
+    }
+  };
   const selectLang = (code) => { setTxLang(code); setTxOpen(false); applyGoogleTranslate(code); };
   const resetLang  = () => { setTxLang(null); setTxOpen(false); applyGoogleTranslate('en'); };
 
