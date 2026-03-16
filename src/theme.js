@@ -151,7 +151,7 @@ export const TRANSLATIONS = {
     // About panel
     aboutHeading:    "About The Notebook",
     aboutP1:         "The Notebook is an independent analysis publication. We write about the forces shaping economies, industries, and markets : from the energy transition to the technology shifts transforming the world as we know it.",
-    aboutP2:         "Through latest research, expert insight, data, and the news, cross-referenced against what matters most: the people driving these changes and those living them. We deliver a straightforward analysis to educate ourselves, and share it plainly.",
+    aboutP2:         "We aims to deliver a straightforward analysis through latest research, expert insight, news and data, cross-referenced with what matters most: the people driving these changes and those living them.",
     // Contact panel
     contactHeading:  "Get in touch",
     contactSent:     "✓ Message sent — thank you!",
@@ -167,7 +167,7 @@ export const TRANSLATIONS = {
     // Footer
     footerTagline:   "Independent analysis publication",
     footerCopy:      "Franz-Frederick Acclassato · All rights reserved",
-    footerDisclaimer:"Published content is for informational and educational purposes, powered by the drive to discover and explain.",
+    footerDisclaimer:"Published content is for informational and educational purposes.",
     // Login modal
     adminLogin:      "Admin Login",
     loginSubtext:    "Private articles are password protected",
