@@ -506,16 +506,18 @@ function Reader({ post, onEdit, onBack, isAdmin }) {
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   },[]);
-  // Reset translation when unmounting (user navigates back)
-  useEffect(()=>()=>applyGoogleTranslate('en'), []);
+  // On mount: ensure clean state (no leftover cookie from previous visit)
+  useEffect(()=>{ clearGTCookies(); },[]);
 
   const handleBack = () => {
     if (txLang) {
-      // Was translating — reset GT, clear cookies, then navigate after GT has fired
+      // Was translating — reset GT fully, clear cookies, then navigate
       applyGoogleTranslate('en');
       setTxLang(null);
       setTimeout(() => { clearGTCookies(); onBack(); }, 700);
     } else {
+      // No translation active — still wipe cookies before leaving
+      clearGTCookies();
       onBack();
     }
   };
