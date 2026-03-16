@@ -506,8 +506,15 @@ function Reader({ post, onEdit, onBack, isAdmin }) {
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   },[]);
-  // On mount: ensure clean state (no leftover cookie from previous visit)
-  useEffect(()=>{ clearGTCookies(); },[]);
+  // On mount: clear cookies AND reset widget if stuck on a previous language
+  useEffect(()=>{
+    clearGTCookies();
+    const select = document.querySelector('.goog-te-combo');
+    if (select && select.value !== '') {
+      select.value = '';
+      select.dispatchEvent(new Event('change'));
+    }
+  },[]);
 
   const handleBack = () => {
     if (txLang) {
