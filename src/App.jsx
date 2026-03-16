@@ -460,17 +460,66 @@ function Editor({ post, onSave, onBack }) {
   );
 }
 
+const TRANSLATE_LANGS = [{code:"fr",label:"Français"},{code:"es",label:"Español"},{code:"de",label:"Deutsch"}];
+const applyGoogleTranslate = (code) => {
+  if (code === 'en') {
+    document.cookie = 'googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+    document.cookie = 'googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=.' + window.location.hostname;
+  }
+  setTimeout(() => {
+    const select = document.querySelector('.goog-te-combo');
+    if (!select) return;
+    select.value = code === 'en' ? '' : code;
+    select.dispatchEvent(new Event('change'));
+  }, 200);
+};
+
 // ── Reader ────────────────────────────────────────────────────────────────────
 function Reader({ post, onEdit, onBack, isAdmin }) {
   const C = useContext(ThemeCtx);
   const t = useContext(LangCtx);
+  const [txOpen, setTxOpen] = useState(false);
+  const [txLang, setTxLang] = useState(null);
+  const txRef = useRef(null);
   const imgMatch=post.body?.match(/<img[^>]+src="([^"]+)"/); const thumb=imgMatch?.[1];
   useEffect(()=>{ updateOGTags({title:post.title,description:post.summary,image:thumb}); return()=>updateOGTags({}); },[post.title,post.summary,thumb]);
+  useEffect(()=>{
+    const handler = e => { if(txRef.current && !txRef.current.contains(e.target)) setTxOpen(false); };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  },[]);
+  // Reset translation when unmounting (user navigates back)
+  useEffect(()=>()=>applyGoogleTranslate('en'), []);
+
+  const handleBack = () => { applyGoogleTranslate('en'); setTxLang(null); onBack(); };
+  const selectLang = (code) => { setTxLang(code); setTxOpen(false); applyGoogleTranslate(code); };
+  const resetLang  = () => { setTxLang(null); setTxOpen(false); applyGoogleTranslate('en'); };
+
   return (
     <div style={{maxWidth:740,margin:"0 auto",padding:"32px 0 100px"}}>
-      <div className="notranslate" style={{display:"flex",justifyContent:"space-between",marginBottom:40}}>
-        <button onClick={onBack} style={{display:"flex",alignItems:"center",gap:6,background:"none",border:`1px solid ${C.editorBorderStrong}`,borderRadius:8,padding:"8px 16px",cursor:"pointer",fontSize:13,color:C.textSecondary}}><BackIcon/> {t('back')}</button>
-        {isAdmin&&<button onClick={onEdit} style={{display:"flex",alignItems:"center",gap:6,background:"none",border:`1px solid ${C.border}`,borderRadius:8,padding:"8px 16px",cursor:"pointer",fontSize:13,color:C.textPrimary,fontWeight:600}}><PenIcon/> {t('edit')}</button>}
+      <div className="notranslate" style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:40}}>
+        <button onClick={handleBack} style={{display:"flex",alignItems:"center",gap:6,background:"none",border:`1px solid ${C.editorBorderStrong}`,borderRadius:8,padding:"8px 16px",cursor:"pointer",fontSize:13,color:C.textSecondary}}><BackIcon/> {t('back')}</button>
+        <div style={{display:"flex",gap:8,alignItems:"center"}}>
+          {/* Translate button */}
+          <div ref={txRef} style={{position:"relative"}}>
+            <button onClick={()=>setTxOpen(o=>!o)}
+              style={{display:"flex",alignItems:"center",gap:6,background:txLang?C.accentLight:"none",border:`1px solid ${txLang?C.accent:C.border}`,borderRadius:8,padding:"8px 14px",cursor:"pointer",fontSize:12,fontWeight:600,color:txLang?C.accent:C.textMuted,transition:"all .15s"}}>
+              <LangIcon/>{txLang?txLang.toUpperCase():"Translate"}
+            </button>
+            {txOpen&&(
+              <div style={{position:"absolute",top:"calc(100% + 6px)",right:0,background:C.white,border:`1px solid ${C.border}`,borderRadius:10,boxShadow:"0 8px 28px rgba(0,0,0,.12)",minWidth:148,zIndex:200,overflow:"hidden"}}>
+                {txLang&&<button onClick={resetLang} style={{display:"flex",alignItems:"center",gap:8,width:"100%",padding:"9px 14px",background:"transparent",border:"none",borderBottom:`1px solid ${C.border}`,cursor:"pointer",fontSize:12,fontWeight:600,color:C.textMuted}}>✕ Reset to English</button>}
+                {TRANSLATE_LANGS.map(l=>(
+                  <button key={l.code} onClick={()=>selectLang(l.code)}
+                    style={{display:"flex",alignItems:"center",gap:10,width:"100%",padding:"9px 14px",background:txLang===l.code?C.accentLight:"transparent",border:"none",cursor:"pointer",fontSize:13,fontWeight:txLang===l.code?700:500,color:txLang===l.code?C.accent:C.textSecondary,textAlign:"left",transition:"background .1s"}}>
+                    <span style={{fontSize:11,fontWeight:700,opacity:0.55,minWidth:22}}>{l.code.toUpperCase()}</span>{l.label}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+          {isAdmin&&<button onClick={onEdit} style={{display:"flex",alignItems:"center",gap:6,background:"none",border:`1px solid ${C.border}`,borderRadius:8,padding:"8px 16px",cursor:"pointer",fontSize:13,color:C.textPrimary,fontWeight:600}}><PenIcon/> {t('edit')}</button>}
+        </div>
       </div>
       <div className="notranslate" style={{display:"flex",flexWrap:"wrap",gap:8,alignItems:"center",marginBottom:14}}>
         {(post.topics||[]).map(tp=><span key={tp} style={{fontSize:10,fontWeight:700,letterSpacing:1.2,textTransform:"uppercase",color:C.topicColors[tp]||C.textSecondary,borderLeft:`3px solid ${C.topicColors[tp]||C.textSecondary}`,paddingLeft:9}}>{t('topic:'+tp)}</span>)}
@@ -661,23 +710,6 @@ export default function App() {
           <div style={{display:"flex",alignItems:"baseline",gap:12}}>
             <span onClick={()=>setView("home")} style={{fontSize:21,fontWeight:800,fontFamily:"Georgia,serif",color:C.textPrimary,letterSpacing:"-0.5px",cursor:"pointer"}}>{t('siteTitle')}</span>
             <span style={{fontSize:12,color:C.textFaint}}>{isAdmin?`${pub} public · ${posts.length-pub} private`:`${pub} article${pub!==1?"s":""}`}</span>
-          </div>
-          {/* Language picker */}
-          <div ref={langRef} style={{position:"relative"}}>
-            <button onClick={()=>setLangOpen(o=>!o)} style={{display:"flex",alignItems:"center",gap:5,background:"none",border:`1px solid ${langOpen?C.border:"transparent"}`,borderRadius:7,padding:"5px 8px",cursor:"pointer",color:C.textMuted,fontSize:13,transition:"border-color .15s"}}>
-              <LangIcon/>
-              <span style={{fontSize:12,fontWeight:600}}>{lang.toUpperCase()}</span>
-            </button>
-            {langOpen&&(
-              <div style={{position:"absolute",top:"calc(100% + 6px)",left:0,background:C.white,border:`1px solid ${C.border}`,borderRadius:10,boxShadow:"0 8px 28px rgba(0,0,0,.12)",minWidth:148,zIndex:200,overflow:"hidden"}}>
-                {LANG_OPTIONS.map(l=>(
-                  <button key={l.code} onClick={()=>{setLang(l.code);setLangOpen(false);}}
-                    style={{display:"flex",alignItems:"center",gap:10,width:"100%",padding:"9px 14px",background:lang===l.code?C.accentLight:"transparent",border:"none",cursor:"pointer",fontSize:13,fontWeight:lang===l.code?700:500,color:lang===l.code?C.accent:C.textSecondary,textAlign:"left",transition:"background .1s"}}>
-                    <span style={{fontSize:11,fontWeight:700,opacity:0.55,minWidth:22,letterSpacing:0.5}}>{l.code.toUpperCase()}</span>{l.label}
-                  </button>
-                ))}
-              </div>
-            )}
           </div>
         </div>
         {/* Right side */}
