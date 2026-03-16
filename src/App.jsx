@@ -824,7 +824,7 @@ export default function App() {
           <div style={{minHeight:"100vh",width:"100%",background:C.offWhite,fontFamily:"system-ui,sans-serif",display:"flex",flexDirection:"column"}}>
             {sidebar}{showLogin&&<LoginModal onLogin={handleLogin} onClose={()=>setShowLogin(false)}/>}{showContact&&<ContactModal onClose={()=>setShowContact(false)}/>}
             <Header/>
-            <main style={{flex:1,width:"100%",boxSizing:"border-box",padding:"34px 40px"}}>
+            <main className="notranslate" style={{flex:1,width:"100%",boxSizing:"border-box",padding:"34px 40px"}}>
               <FilterBar filterTopic={filterTopic} setFilterTopic={setFilterTopic} filterRegion={filterRegion} setFilterRegion={setFilterRegion} isAdmin={isAdmin} filterStatus={filterStatus} setFilterStatus={setFilterStatus} search={search} setSearch={setSearch}/>
               {visible.length===0
                 ?<div style={{textAlign:"center",padding:"90px 0"}}><div style={{fontSize:17,fontWeight:600,color:C.metaText}}>{t('comingSoon')}</div></div>
