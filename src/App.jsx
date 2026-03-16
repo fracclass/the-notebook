@@ -594,29 +594,12 @@ export default function App() {
   const C = { ...(isDark ? DARK : LIGHT), topicColors: isDark ? DARK_TOPIC_COLORS : TOPIC_COLORS };
 
   // ── Language state ──
-  const [lang, setLang] = useState(() => localStorage.getItem('nb_lang') || 'en');
   const t = key => {
-    if (key.startsWith('topic:')) {
-      const tp = key.slice(6);
-      return TRANSLATIONS[lang]?.topicLabels?.[tp] || TRANSLATIONS.en.topicLabels[tp] || tp;
-    }
-    if (key.startsWith('region:')) {
-      const r = key.slice(7);
-      return TRANSLATIONS[lang]?.regionLabels?.[r] || TRANSLATIONS.en.regionLabels[r] || r;
-    }
-    return (TRANSLATIONS[lang]?.[key]) ?? (TRANSLATIONS.en[key] ?? key);
+    if (key.startsWith('topic:'))  { const tp = key.slice(6); return TRANSLATIONS.en.topicLabels[tp]  || tp; }
+    if (key.startsWith('region:')) { const r  = key.slice(7); return TRANSLATIONS.en.regionLabels[r]  || r;  }
+    return TRANSLATIONS.en[key] ?? key;
   };
-  useEffect(() => { localStorage.setItem('nb_lang', lang); }, [lang]);
   useEffect(() => { document.body.classList.toggle('dark-mode', isDark); }, [isDark]);
-
-  // ── Lang dropdown state ──
-  const [langOpen, setLangOpen] = useState(false);
-  const langRef = useRef(null);
-  useEffect(() => {
-    const handler = e => { if (langRef.current && !langRef.current.contains(e.target)) setLangOpen(false); };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, []);
 
   // ── App state ──
   const [posts,setPosts]     = useState([]);

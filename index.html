@@ -24,6 +24,8 @@
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
     <script>
+      // Remove legacy language preference (UI now always English)
+      localStorage.removeItem('nb_lang');
       // Always start in English — wipe any lingering translation cookie before GT loads
       document.cookie = 'googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
       document.cookie = 'googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=.' + window.location.hostname;
