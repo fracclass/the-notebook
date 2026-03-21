@@ -102,7 +102,7 @@ function setMeta(prop, content) {
 }
 function updateOGTags({ title, description, image } = {}) {
   const t = title ? `${title} — The Notebook` : "The Notebook";
-  const d = description || "Independent analysis on markets, energy, and the forces shaping the global economy.";
+  const d = description || "Independent analytical publication offering insights on the forces shaping economies, industries, and markets.";
   document.title = t;
   setMeta("description", d); setMeta("og:title", t); setMeta("og:description", d);
   setMeta("og:url", window.location.href); setMeta("og:type", title ? "article" : "website");
@@ -824,12 +824,56 @@ export default function App() {
           <div style={{minHeight:"100vh",width:"100%",background:C.offWhite,fontFamily:"system-ui,sans-serif",display:"flex",flexDirection:"column"}}>
             {sidebar}{showLogin&&<LoginModal onLogin={handleLogin} onClose={()=>setShowLogin(false)}/>}{showContact&&<ContactModal onClose={()=>setShowContact(false)}/>}
             <Header/>
-            <main className="notranslate" style={{flex:1,width:"100%",boxSizing:"border-box",padding:"34px 40px"}}>
-              <FilterBar filterTopic={filterTopic} setFilterTopic={setFilterTopic} filterRegion={filterRegion} setFilterRegion={setFilterRegion} isAdmin={isAdmin} filterStatus={filterStatus} setFilterStatus={setFilterStatus} search={search} setSearch={setSearch}/>
+            <main className="notranslate" style={{flex:1,width:"100%",boxSizing:"border-box",padding:"0 40px 34px"}}>
+              {/* Tagline */}
+              <div style={{maxWidth:1200,margin:"0 auto",padding:"28px 0 24px",borderBottom:`1px solid ${C.border}`}}>
+                <p style={{margin:0,fontSize:14,color:C.textMuted,fontFamily:"Georgia,serif",fontStyle:"italic",lineHeight:1.6}}>
+                  {t('aboutP1')}
+                </p>
+              </div>
+
+              <div style={{maxWidth:1200,margin:"0 auto",padding:"28px 0 0"}}>
+                <FilterBar filterTopic={filterTopic} setFilterTopic={setFilterTopic} filterRegion={filterRegion} setFilterRegion={setFilterRegion} isAdmin={isAdmin} filterStatus={filterStatus} setFilterStatus={setFilterStatus} search={search} setSearch={setSearch}/>
+              </div>
+
               {visible.length===0
                 ?<div style={{textAlign:"center",padding:"90px 0"}}><div style={{fontSize:17,fontWeight:600,color:C.metaText}}>{t('comingSoon')}</div></div>
-                :<div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(340px,1fr))",gap:20}}>
-                  {visible.map(p=><Card key={p.id} post={p} onClick={()=>{setActiveId(p.id);setView("read");}} onDelete={handleDelete} isAdmin={isAdmin}/>)}
+                :<div style={{maxWidth:1200,margin:"0 auto"}}>
+                  {/* Hero — featured (latest) article */}
+                  {(()=>{
+                    const hero = visible[0];
+                    const rest = visible.slice(1);
+                    const heroImg = hero.body?.match(/<img[^>]+src="([^"]+)"/)?.[1];
+                    return <>
+                      <div onClick={()=>{setActiveId(hero.id);setView("read");}}
+                        style={{cursor:"pointer",marginBottom:36,background:C.cardBg,borderRadius:16,border:`1px solid ${C.border}`,overflow:"hidden",transition:"all .15s",boxShadow:"0 1px 4px rgba(0,0,0,.04)"}}
+                        onMouseEnter={e=>{e.currentTarget.style.boxShadow="0 12px 36px rgba(0,0,0,.10)";e.currentTarget.style.transform="translateY(-2px)";}}
+                        onMouseLeave={e=>{e.currentTarget.style.boxShadow="0 1px 4px rgba(0,0,0,.04)";e.currentTarget.style.transform="none";}}>
+                        {heroImg&&<div style={{height:320,overflow:"hidden",background:C.cardThumbBg}}><img src={heroImg} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/></div>}
+                        <div style={{padding:heroImg?"28px 32px 30px":"36px 32px 34px"}}>
+                          <div style={{display:"flex",flexWrap:"wrap",gap:6,alignItems:"center",marginBottom:14}}>
+                            {(hero.topics||[]).map(tp=><span key={tp} style={{fontSize:10,fontWeight:700,letterSpacing:1.2,textTransform:"uppercase",color:C.topicColors[tp]||C.textSecondary,borderLeft:`3px solid ${C.topicColors[tp]||C.textSecondary}`,paddingLeft:8}}>{t('topic:'+tp)}</span>)}
+                            {(hero.regions||[]).map(r=><span key={r} style={{fontSize:10,fontWeight:600,letterSpacing:0.8,textTransform:"uppercase",color:REGION_COLORS[r]||C.privateGray,background:`${REGION_COLORS[r]}18`,padding:"2px 8px",borderRadius:10}}>{t('region:'+r)}</span>)}
+                            {isAdmin&&<span style={{display:"flex",alignItems:"center",gap:4,fontSize:11,fontWeight:600,padding:"3px 9px",borderRadius:20,color:hero.status==="public"?C.publicGreen:C.privateGray,background:hero.status==="public"?C.publicBg:C.privateBg}}>{hero.status==="public"?<GlobeIcon/>:<LockIcon/>}{hero.status==="public"?t('statusPublic'):t('statusPrivate')}</span>}
+                            {isAdmin&&<button onClick={e=>{e.stopPropagation();if(window.confirm(t('deleteConfirm')))handleDelete(hero.id);}} style={{background:"none",border:"none",cursor:"pointer",color:C.filterBorder,padding:2}}><TrashIcon/></button>}
+                          </div>
+                          <h2 style={{fontSize:30,fontWeight:700,lineHeight:1.25,margin:"0 0 12px",color:C.textPrimary,fontFamily:"Georgia,serif"}}>{hero.title}</h2>
+                          <p style={{fontSize:16,color:C.textSecondary,lineHeight:1.65,margin:"0 0 20px",fontFamily:"Georgia,serif"}}>{hero.summary}</p>
+                          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",fontSize:12,color:C.textFaint}}>
+                            <span>{hero.author&&<span style={{color:C.metaText,marginRight:6}}>{hero.author} · </span>}{fmt(hero.updatedAt,t('locale'))}</span>
+                            <span style={{background:C.readingTimeBg,padding:"2px 8px",borderRadius:8,fontSize:11,fontWeight:600,color:C.readingTimeText}}>{readingTime(hero.body)} {t('minRead')}</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {rest.length>0&&<>
+                        <div style={{fontSize:10,fontWeight:700,letterSpacing:1.4,textTransform:"uppercase",color:C.textFaint,marginBottom:18,paddingBottom:10,borderBottom:`1px solid ${C.border}`}}>{t('latestArticles')}</div>
+                        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(340px,1fr))",gap:20}}>
+                          {rest.map(p=><Card key={p.id} post={p} onClick={()=>{setActiveId(p.id);setView("read");}} onDelete={handleDelete} isAdmin={isAdmin}/>)}
+                        </div>
+                      </>}
+                    </>;
+                  })()}
                 </div>}
             </main>
             <Footer/>
