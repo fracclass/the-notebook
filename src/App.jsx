@@ -37,6 +37,7 @@ const XIcon       = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="
 const HamburgerIcon = ({color}) => <svg width="22" height="16" viewBox="0 0 22 16" fill="none"><line x1="0" y1="1" x2="22" y2="1" stroke={color} strokeWidth="2" strokeLinecap="round"/><line x1="0" y1="8" x2="22" y2="8" stroke={color} strokeWidth="2" strokeLinecap="round"/><line x1="0" y1="15" x2="22" y2="15" stroke={color} strokeWidth="2" strokeLinecap="round"/></svg>;
 const LangIcon    = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>;
 const MoonIcon    = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>;
+const StarIcon    = ({filled}) => <svg width="14" height="14" viewBox="0 0 24 24" fill={filled?"currentColor":"none"} stroke="currentColor" strokeWidth="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>;
 const SunIcon     = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>;
 
 // ── API ────────────────────────────────────────────────────────────────────────
@@ -396,7 +397,7 @@ function FilterBar({ filterTopic,setFilterTopic,filterRegion,setFilterRegion,isA
 }
 
 // ── Card ──────────────────────────────────────────────────────────────────────
-function Card({ post, onClick, onDelete, isAdmin }) {
+function Card({ post, onClick, onDelete, onFeature, isAdmin }) {
   const C = useContext(ThemeCtx);
   const t = useContext(LangCtx);
   const imgMatch=post.body?.match(/<img[^>]+src="([^"]+)"/); const thumb=imgMatch?.[1];
@@ -413,6 +414,7 @@ function Card({ post, onClick, onDelete, isAdmin }) {
           </div>
           <div style={{display:"flex",gap:7,alignItems:"center",flexShrink:0,marginLeft:8}}>
             {isAdmin&&<span style={{display:"flex",alignItems:"center",gap:4,fontSize:11,fontWeight:600,padding:"3px 9px",borderRadius:20,color:post.status==="public"?C.publicGreen:C.privateGray,background:post.status==="public"?C.publicBg:C.privateBg}}>{post.status==="public"?<GlobeIcon/>:<LockIcon/>}{post.status==="public"?t('statusPublic'):t('statusPrivate')}</span>}
+            {isAdmin&&<button title={post.featured?"Remove from featured":"Set as featured"} onClick={e=>{e.stopPropagation();onFeature(post.id);}} style={{background:"none",border:"none",cursor:"pointer",color:post.featured?"#d4a017":"#bbb",padding:2}}><StarIcon filled={!!post.featured}/></button>}
             {isAdmin&&<button onClick={e=>{e.stopPropagation();if(window.confirm(t('deleteConfirm')))onDelete(post.id);}} style={{background:"none",border:"none",cursor:"pointer",color:C.filterBorder,padding:2}}><TrashIcon/></button>}
           </div>
         </div>
@@ -674,6 +676,12 @@ export default function App() {
     await apiDeletePost(id);
   };
 
+  const handleFeature = async (id) => {
+    const updated = posts.map(p=>({...p, featured: p.id===id ? !p.featured : false}));
+    setPosts(updated);
+    await apiSetPosts(updated);
+  };
+
   const activePost = posts.find(p=>p.id===activeId)||{};
 
   // ── Messages (admin inbox) ──
@@ -702,7 +710,8 @@ export default function App() {
     await apiSetMessages(updated);
   };
 
-  const visiblePosts = posts.filter(p=>isAdmin?true:p.status==="public");
+  const visiblePosts = posts.filter(p=>isAdmin?true:p.status==="public")
+    .sort((a,b)=>(b.featured?1:0)-(a.featured?1:0) || new Date(b.createdAt||0)-new Date(a.createdAt||0));
   const visible = visiblePosts.filter(p=>{
     if(filterTopic!=="All"&&!(p.topics||[]).includes(filterTopic))return false;
     if(filterRegion!=="All"&&!(p.regions||[]).includes(filterRegion))return false;
@@ -839,7 +848,7 @@ export default function App() {
               {visible.length===0
                 ?<div style={{textAlign:"center",padding:"90px 0"}}><div style={{fontSize:17,fontWeight:600,color:C.metaText}}>{t('comingSoon')}</div></div>
                 :<div style={{maxWidth:1200,margin:"0 auto"}}>
-                  {/* Hero — featured (latest) article */}
+                  {/* Hero — featured or latest article */}
                   {(()=>{
                     const hero = visible[0];
                     const rest = visible.slice(1);
@@ -855,6 +864,7 @@ export default function App() {
                             {(hero.topics||[]).map(tp=><span key={tp} style={{fontSize:10,fontWeight:700,letterSpacing:1.2,textTransform:"uppercase",color:C.topicColors[tp]||C.textSecondary,borderLeft:`3px solid ${C.topicColors[tp]||C.textSecondary}`,paddingLeft:8}}>{t('topic:'+tp)}</span>)}
                             {(hero.regions||[]).map(r=><span key={r} style={{fontSize:10,fontWeight:600,letterSpacing:0.8,textTransform:"uppercase",color:REGION_COLORS[r]||C.privateGray,background:`${REGION_COLORS[r]}18`,padding:"2px 8px",borderRadius:10}}>{t('region:'+r)}</span>)}
                             {isAdmin&&<span style={{display:"flex",alignItems:"center",gap:4,fontSize:11,fontWeight:600,padding:"3px 9px",borderRadius:20,color:hero.status==="public"?C.publicGreen:C.privateGray,background:hero.status==="public"?C.publicBg:C.privateBg}}>{hero.status==="public"?<GlobeIcon/>:<LockIcon/>}{hero.status==="public"?t('statusPublic'):t('statusPrivate')}</span>}
+                            {isAdmin&&<button title={hero.featured?"Remove from featured":"Set as featured"} onClick={e=>{e.stopPropagation();handleFeature(hero.id);}} style={{background:"none",border:"none",cursor:"pointer",color:hero.featured?"#d4a017":"#bbb",padding:2}}><StarIcon filled={!!hero.featured}/></button>}
                             {isAdmin&&<button onClick={e=>{e.stopPropagation();if(window.confirm(t('deleteConfirm')))handleDelete(hero.id);}} style={{background:"none",border:"none",cursor:"pointer",color:C.filterBorder,padding:2}}><TrashIcon/></button>}
                           </div>
                           <h2 style={{fontSize:30,fontWeight:700,lineHeight:1.25,margin:"0 0 12px",color:C.textPrimary,fontFamily:"Georgia,serif"}}>{hero.title}</h2>
@@ -869,7 +879,7 @@ export default function App() {
                       {rest.length>0&&<>
                         <div style={{fontSize:10,fontWeight:700,letterSpacing:1.4,textTransform:"uppercase",color:C.textFaint,marginBottom:18,paddingBottom:10,borderBottom:`1px solid ${C.border}`}}>{t('latestArticles')}</div>
                         <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(340px,1fr))",gap:20}}>
-                          {rest.map(p=><Card key={p.id} post={p} onClick={()=>{setActiveId(p.id);setView("read");}} onDelete={handleDelete} isAdmin={isAdmin}/>)}
+                          {rest.map(p=><Card key={p.id} post={p} onClick={()=>{setActiveId(p.id);setView("read");}} onDelete={handleDelete} onFeature={handleFeature} isAdmin={isAdmin}/>)}
                         </div>
                       </>}
                     </>;
