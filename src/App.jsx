@@ -384,14 +384,13 @@ function SourceMgr({ sources, onChange }) {
 }
 
 // ── Filter Bar ────────────────────────────────────────────────────────────────
-function FilterBar({ filterTopic,setFilterTopic,filterRegion,setFilterRegion,isAdmin,filterStatus,setFilterStatus,search,setSearch }) {
+function FilterBar({ filterTopic,setFilterTopic,filterRegion,setFilterRegion,isAdmin,filterStatus,setFilterStatus }) {
   const C = useContext(ThemeCtx);
   const t = useContext(LangCtx);
   return (
     <div className="notranslate" style={{marginBottom:28}}>
-      <div style={{display:"flex",gap:10,marginBottom:14,flexWrap:"wrap",alignItems:"center"}}>
-        <input value={search} onChange={e=>setSearch(e.target.value)} placeholder={t('searchPlaceholder')} style={{padding:"8px 14px",border:`1px solid ${C.filterBorder}`,borderRadius:8,fontSize:13,width:200,outline:"none",background:C.filterBg,color:C.textPrimary}}/>
-        {isAdmin&&<div style={{display:"flex",border:`1px solid ${C.filterBorder}`,borderRadius:8,overflow:"hidden"}}>
+      {isAdmin&&<div style={{display:"flex",gap:10,marginBottom:14,flexWrap:"wrap",alignItems:"center"}}>
+        <div style={{display:"flex",border:`1px solid ${C.filterBorder}`,borderRadius:8,overflow:"hidden"}}>
           {["All","public","private"].map(s=>(
             <button key={s} onClick={()=>setFilterStatus(s)} style={{padding:"7px 13px",border:"none",cursor:"pointer",fontSize:12,fontWeight:600,background:filterStatus===s?C.textPrimary:C.filterBg,color:filterStatus===s?C.offWhite:C.textSecondary}}>
               {s==="All"?t('filterAll'):s==="public"?t('filterPublic'):t('filterPrivate')}</button>
@@ -752,7 +751,6 @@ export default function App() {
   const [filterTopic,setFilterTopic]   = useState("All");
   const [filterRegion,setFilterRegion] = useState("All");
   const [filterStatus,setFilterStatus] = useState("All");
-  const [search,setSearch]   = useState("");
   const [isAdmin,setIsAdmin] = useState(initAuth);
   const [showLogin,setShowLogin] = useState(false);
   const [sidebarOpen,setSidebarOpen]   = useState(false);
@@ -880,7 +878,7 @@ export default function App() {
     if(filterTopic!=="All"&&!(p.topics||[]).includes(filterTopic))return false;
     if(filterRegion!=="All"&&!(p.regions||[]).includes(filterRegion))return false;
     if(isAdmin&&filterStatus!=="All"&&p.status!==filterStatus)return false;
-    if(search&&!p.title.toLowerCase().includes(search.toLowerCase())&&!p.summary?.toLowerCase().includes(search.toLowerCase()))return false;
+
     return true;
   });
   const pub = posts.filter(p=>p.status==="public").length;
@@ -1038,7 +1036,7 @@ export default function App() {
               </div>
 
               <div style={{maxWidth:1200,margin:"0 auto",padding:"28px 0 0"}}>
-                <FilterBar filterTopic={filterTopic} setFilterTopic={setFilterTopic} filterRegion={filterRegion} setFilterRegion={setFilterRegion} isAdmin={isAdmin} filterStatus={filterStatus} setFilterStatus={setFilterStatus} search={search} setSearch={setSearch}/>
+                <FilterBar filterTopic={filterTopic} setFilterTopic={setFilterTopic} filterRegion={filterRegion} setFilterRegion={setFilterRegion} isAdmin={isAdmin} filterStatus={filterStatus} setFilterStatus={setFilterStatus}/>
               </div>
 
               {visible.length===0
