@@ -41,6 +41,7 @@ const MoonIcon    = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="
 const StarIcon    = ({filled}) => <svg width="14" height="14" viewBox="0 0 24 24" fill={filled?"currentColor":"none"} stroke="currentColor" strokeWidth="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>;
 const SunIcon     = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>;
 const ShareIcon   = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>;
+const SearchIcon  = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>;
 
 // ── API ────────────────────────────────────────────────────────────────────────
 async function apiGetPosts() {
@@ -514,7 +515,7 @@ const applyGoogleTranslate = (code, attempt = 0) => {
 };
 
 // ── Reader ────────────────────────────────────────────────────────────────────
-function Reader({ post, onEdit, onBack, isAdmin }) {
+function Reader({ post, onEdit, onBack, isAdmin, allPosts, onNavigate }) {
   const C = useContext(ThemeCtx);
   const t = useContext(LangCtx);
   const [txOpen, setTxOpen] = useState(false);
@@ -580,24 +581,6 @@ function Reader({ post, onEdit, onBack, isAdmin }) {
           }} style={{display:"flex",alignItems:"center",gap:6,background:"none",border:`1px solid ${C.border}`,borderRadius:8,padding:"8px 14px",cursor:"pointer",fontSize:12,fontWeight:600,color:copied?"#27ae60":C.textMuted,transition:"all .15s"}}>
             <ShareIcon/>{copied?"Copied!":"Share"}
           </button>
-          {/* Translate button */}
-          <div ref={txRef} style={{position:"relative"}}>
-            <button onClick={()=>setTxOpen(o=>!o)}
-              style={{display:"flex",alignItems:"center",gap:6,background:txLang?C.accentLight:"none",border:`1px solid ${txLang?C.accent:C.border}`,borderRadius:8,padding:"8px 14px",cursor:"pointer",fontSize:12,fontWeight:600,color:txLang?C.accent:C.textMuted,transition:"all .15s"}}>
-              <LangIcon/>{txLang?txLang.toUpperCase():"Translate"}
-            </button>
-            {txOpen&&(
-              <div style={{position:"absolute",top:"calc(100% + 6px)",right:0,background:C.white,border:`1px solid ${C.border}`,borderRadius:10,boxShadow:"0 8px 28px rgba(0,0,0,.12)",minWidth:148,zIndex:200,overflow:"hidden"}}>
-                {txLang&&<button onClick={resetLang} style={{display:"flex",alignItems:"center",gap:8,width:"100%",padding:"9px 14px",background:"transparent",border:"none",borderBottom:`1px solid ${C.border}`,cursor:"pointer",fontSize:12,fontWeight:600,color:C.textMuted}}>✕ Reset to English</button>}
-                {TRANSLATE_LANGS.map(l=>(
-                  <button key={l.code} onClick={()=>selectLang(l.code)}
-                    style={{display:"flex",alignItems:"center",gap:10,width:"100%",padding:"9px 14px",background:txLang===l.code?C.accentLight:"transparent",border:"none",cursor:"pointer",fontSize:13,fontWeight:txLang===l.code?700:500,color:txLang===l.code?C.accent:C.textSecondary,textAlign:"left",transition:"background .1s"}}>
-                    <span style={{fontSize:11,fontWeight:700,opacity:0.55,minWidth:22}}>{l.code.toUpperCase()}</span>{l.label}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
           {isAdmin&&<button onClick={onEdit} style={{display:"flex",alignItems:"center",gap:6,background:"none",border:`1px solid ${C.border}`,borderRadius:8,padding:"8px 16px",cursor:"pointer",fontSize:13,color:C.textPrimary,fontWeight:600}}><PenIcon/> {t('edit')}</button>}
         </div>
       </div>
@@ -606,15 +589,35 @@ function Reader({ post, onEdit, onBack, isAdmin }) {
         {(post.regions||[]).map(r=><span key={r} style={{fontSize:10,fontWeight:600,letterSpacing:0.8,textTransform:"uppercase",color:REGION_COLORS[r]||C.privateGray,background:`${REGION_COLORS[r]}22`,padding:"3px 9px",borderRadius:10}}>{t('region:'+r)}</span>)}
         {isAdmin&&<span style={{display:"flex",alignItems:"center",gap:4,fontSize:11,fontWeight:600,padding:"3px 9px",borderRadius:20,color:post.status==="public"?C.publicGreen:C.privateGray,background:post.status==="public"?C.publicBg:C.privateBg}}>{post.status==="public"?<GlobeIcon/>:<LockIcon/>}{post.status==="public"?t('statusPublic'):t('statusPrivate')}</span>}
       </div>
-      <h1 style={{fontSize:40,fontWeight:700,lineHeight:1.2,margin:"0 0 16px",color:C.textPrimary,fontFamily:"Georgia,serif"}}>{post.title}</h1>
-      <p style={{fontSize:18,color:C.summaryColor,fontStyle:"italic",lineHeight:1.65,marginBottom:14,fontFamily:"Georgia,serif"}}>{post.summary}</p>
-      <div className="notranslate" style={{fontSize:13,color:C.textFaint,marginBottom:40,paddingBottom:22,borderBottom:`1px solid ${C.editorBorder}`,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+      <h1 className="notranslate" style={{fontSize:40,fontWeight:700,lineHeight:1.2,margin:"0 0 16px",color:C.textPrimary,fontFamily:"Georgia,serif"}}>{post.title}</h1>
+      <p className="notranslate" style={{fontSize:18,color:C.summaryColor,fontStyle:"italic",lineHeight:1.65,marginBottom:14,fontFamily:"Georgia,serif"}}>{post.summary}</p>
+      <div className="notranslate" style={{fontSize:13,color:C.textFaint,marginBottom:28,paddingBottom:22,borderBottom:`1px solid ${C.editorBorder}`,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
         <span>{post.author&&<span style={{fontWeight:600,color:C.textSecondary,marginRight:6}}>{t('by')} {post.author} · </span>}{fmt(post.createdAt,t('locale'))}{post.updatedAt!==post.createdAt&&<span> · {t('lastRevised')} {fmt(post.updatedAt,t('locale'))}</span>}</span>
         <span style={{background:C.readingTimeBg,padding:"3px 10px",borderRadius:8,fontSize:11,fontWeight:600,color:C.readingTimeText,flexShrink:0}}>{readingTime(post.body)} {t('minRead')}</span>
       </div>
+      {/* Translate — scoped to article body only */}
+      <div className="notranslate" style={{display:"flex",alignItems:"center",gap:10,marginBottom:20}}>
+        <div ref={txRef} style={{position:"relative"}}>
+          <button onClick={()=>setTxOpen(o=>!o)}
+            style={{display:"flex",alignItems:"center",gap:6,background:txLang?C.accentLight:"none",border:`1px solid ${txLang?C.accent:C.border}`,borderRadius:8,padding:"7px 13px",cursor:"pointer",fontSize:12,fontWeight:600,color:txLang?C.accent:C.textMuted,transition:"all .15s"}}>
+            <LangIcon/>{txLang?`Translated · ${txLang.toUpperCase()}`:"Translate article"}
+          </button>
+          {txOpen&&(
+            <div style={{position:"absolute",top:"calc(100% + 6px)",left:0,background:C.white,border:`1px solid ${C.border}`,borderRadius:10,boxShadow:"0 8px 28px rgba(0,0,0,.12)",minWidth:148,zIndex:200,overflow:"hidden"}}>
+              {txLang&&<button onClick={resetLang} style={{display:"flex",alignItems:"center",gap:8,width:"100%",padding:"9px 14px",background:"transparent",border:"none",borderBottom:`1px solid ${C.border}`,cursor:"pointer",fontSize:12,fontWeight:600,color:C.textMuted}}>✕ Reset to English</button>}
+              {TRANSLATE_LANGS.map(l=>(
+                <button key={l.code} onClick={()=>selectLang(l.code)}
+                  style={{display:"flex",alignItems:"center",gap:10,width:"100%",padding:"9px 14px",background:txLang===l.code?C.accentLight:"transparent",border:"none",cursor:"pointer",fontSize:13,fontWeight:txLang===l.code?700:500,color:txLang===l.code?C.accent:C.textSecondary,textAlign:"left",transition:"background .1s"}}>
+                  <span style={{fontSize:11,fontWeight:700,opacity:0.55,minWidth:22}}>{l.code.toUpperCase()}</span>{l.label}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
       <div className="article-body" style={{fontSize:17,lineHeight:1.85,color:C.bodyText,fontFamily:"Georgia,serif"}} dangerouslySetInnerHTML={{__html:post.body}}/>
       {post.sources?.length>0&&(
-        <div style={{marginTop:52,paddingTop:26,borderTop:`1px solid ${C.editorBorder}`}}>
+        <div className="notranslate" style={{marginTop:52,paddingTop:26,borderTop:`1px solid ${C.editorBorder}`}}>
           <div style={{fontSize:10,fontWeight:700,letterSpacing:1.2,textTransform:"uppercase",color:C.textFaint,marginBottom:16}}>{t('labelSources')}</div>
           {post.sources.map((s,i)=>(
             <div key={i} style={{display:"flex",alignItems:"center",gap:10,marginBottom:9,fontSize:14}}>
@@ -624,8 +627,135 @@ function Reader({ post, onEdit, onBack, isAdmin }) {
           ))}
         </div>
       )}
+      {/* Related articles */}
+      {(()=>{
+        const related = (allPosts||[]).filter(p => p.id !== post.id && p.status === "public")
+          .map(p => {
+            const topicOverlap = (p.topics||[]).filter(tp => (post.topics||[]).includes(tp)).length;
+            const regionOverlap = (p.regions||[]).filter(r => (post.regions||[]).includes(r)).length;
+            return { ...p, score: topicOverlap * 2 + regionOverlap };
+          })
+          .filter(p => p.score > 0)
+          .sort((a, b) => b.score - a.score)
+          .slice(0, 3);
+        if (related.length === 0) return null;
+        return (
+          <div className="notranslate" style={{marginTop:56,paddingTop:28,borderTop:`1px solid ${C.editorBorder}`}}>
+            <div style={{fontSize:10,fontWeight:700,letterSpacing:1.4,textTransform:"uppercase",color:C.textFaint,marginBottom:18}}>Related Articles</div>
+            <div style={{display:"grid",gridTemplateColumns:`repeat(${Math.min(related.length,3)},1fr)`,gap:16}}>
+              {related.map(r=>{
+                const rImg = r.body?.match(/<img[^>]+src="([^"]+)"/)?.[1];
+                return (
+                  <div key={r.id} onClick={()=>onNavigate&&onNavigate(r.id)} style={{cursor:"pointer",background:C.cardBg,borderRadius:10,border:`1px solid ${C.border}`,overflow:"hidden",transition:"all .15s"}}
+                    onMouseEnter={e=>{e.currentTarget.style.boxShadow="0 6px 20px rgba(0,0,0,.08)";e.currentTarget.style.transform="translateY(-1px)";}}
+                    onMouseLeave={e=>{e.currentTarget.style.boxShadow="none";e.currentTarget.style.transform="none";}}>
+                    {rImg&&<div style={{height:100,overflow:"hidden",background:C.cardThumbBg}}><img src={rImg} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/></div>}
+                    <div style={{padding:"14px 16px"}}>
+                      <div style={{display:"flex",gap:4,marginBottom:6}}>
+                        {(r.topics||[]).slice(0,2).map(tp=><span key={tp} style={{fontSize:9,fontWeight:700,letterSpacing:1,textTransform:"uppercase",color:C.topicColors[tp]||C.textSecondary}}>{tp}</span>)}
+                      </div>
+                      <div style={{fontSize:14,fontWeight:700,lineHeight:1.3,color:C.textPrimary,fontFamily:"Georgia,serif",marginBottom:6}}>{r.title}</div>
+                      <div style={{fontSize:11,color:C.textFaint}}>{readingTime(r.body)} min read</div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })()}
     </div>
     </>
+  );
+}
+
+// ── Search Modal ──────────────────────────────────────────────────────────────
+function SearchModal({ posts, onSelect, onClose }) {
+  const C = useContext(ThemeCtx);
+  const [q, setQ] = useState("");
+  const inputRef = useRef(null);
+  useEffect(()=>{ inputRef.current?.focus(); },[]);
+  const results = q.trim().length < 2 ? [] : posts.filter(p => {
+    const lq = q.toLowerCase();
+    const text = `${p.title} ${p.summary} ${p.author} ${(p.topics||[]).join(" ")} ${(p.regions||[]).join(" ")}`.toLowerCase();
+    // Also search body text (strip HTML)
+    const bodyText = (p.body||"").replace(/<[^>]+>/g,"").toLowerCase();
+    return text.includes(lq) || bodyText.includes(lq);
+  }).slice(0, 8);
+
+  return (
+    <div style={{position:"fixed",inset:0,zIndex:500,display:"flex",alignItems:"flex-start",justifyContent:"center",paddingTop:80}}>
+      <div onClick={onClose} style={{position:"absolute",inset:0,background:"rgba(0,0,0,.45)"}}/>
+      <div className="notranslate" style={{position:"relative",background:C.white,borderRadius:14,boxShadow:"0 20px 60px rgba(0,0,0,.25)",width:"100%",maxWidth:560,margin:"0 16px"}}>
+        <div style={{display:"flex",alignItems:"center",gap:10,padding:"16px 20px",borderBottom:`1px solid ${C.border}`}}>
+          <SearchIcon/>
+          <input ref={inputRef} value={q} onChange={e=>setQ(e.target.value)} placeholder="Search articles…"
+            style={{flex:1,border:"none",outline:"none",fontSize:16,background:"transparent",color:C.textPrimary,fontFamily:"Georgia,serif"}}/>
+          <button onClick={onClose} style={{background:"none",border:"none",cursor:"pointer",color:C.textFaint,padding:4}}><XIcon/></button>
+        </div>
+        <div style={{maxHeight:400,overflowY:"auto"}}>
+          {q.trim().length >= 2 && results.length === 0 && (
+            <div style={{padding:"28px 20px",textAlign:"center",color:C.textMuted,fontSize:14}}>No articles found.</div>
+          )}
+          {results.map(p => {
+            const rImg = p.body?.match(/<img[^>]+src="([^"]+)"/)?.[1];
+            return (
+              <div key={p.id} onClick={()=>{onSelect(p.id);onClose();}}
+                style={{display:"flex",gap:14,padding:"14px 20px",cursor:"pointer",borderBottom:`1px solid ${C.border}`,transition:"background .1s"}}
+                onMouseEnter={e=>e.currentTarget.style.background=C.offWhite}
+                onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
+                {rImg&&<div style={{width:56,height:56,borderRadius:8,overflow:"hidden",flexShrink:0,background:C.cardThumbBg}}><img src={rImg} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/></div>}
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{fontSize:14,fontWeight:700,color:C.textPrimary,fontFamily:"Georgia,serif",marginBottom:3,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.title}</div>
+                  <div style={{fontSize:12,color:C.textMuted,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.summary}</div>
+                  <div style={{display:"flex",gap:6,marginTop:4}}>
+                    {(p.topics||[]).slice(0,2).map(tp=><span key={tp} style={{fontSize:9,fontWeight:700,letterSpacing:1,textTransform:"uppercase",color:C.topicColors[tp]||C.textSecondary}}>{tp}</span>)}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+        {q.trim().length < 2 && (
+          <div style={{padding:"20px",textAlign:"center",color:C.textFaint,fontSize:13}}>Type at least 2 characters to search…</div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── Newsletter Bar ────────────────────────────────────────────────────────────
+function NewsletterBar() {
+  const C = useContext(ThemeCtx);
+  const [email, setEmail] = useState("");
+  const [status, setStatus] = useState(null); // null | "sending" | "done" | "error"
+  const submit = async () => {
+    if(!email.trim() || !email.includes("@")) return;
+    setStatus("sending");
+    try {
+      await fetch("/api/newsletter-subscribe", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({email:email.trim()}) });
+      setStatus("done");
+    } catch { setStatus("error"); }
+  };
+  return (
+    <div className="notranslate" style={{background:C.textPrimary,borderRadius:12,padding:"28px 32px",display:"flex",flexWrap:"wrap",alignItems:"center",justifyContent:"space-between",gap:16}}>
+      <div>
+        <div style={{fontSize:16,fontWeight:700,color:C.offWhite,fontFamily:"Georgia,serif",marginBottom:4}}>Stay informed</div>
+        <div style={{fontSize:13,color:"rgba(255,255,255,.6)"}}>Get new articles delivered to your inbox.</div>
+      </div>
+      {status==="done"
+        ? <div style={{fontSize:13,fontWeight:600,color:"#27ae60"}}>Subscribed — thank you!</div>
+        : <div style={{display:"flex",gap:8}}>
+            <input type="email" value={email} onChange={e=>setEmail(e.target.value)} onKeyDown={e=>e.key==="Enter"&&submit()} placeholder="your@email.com"
+              style={{padding:"9px 14px",borderRadius:8,border:"none",fontSize:13,width:220,outline:"none",background:"rgba(255,255,255,.12)",color:"#fff"}}/>
+            <button onClick={submit} disabled={status==="sending"}
+              style={{padding:"9px 18px",borderRadius:8,border:"none",background:C.accent,color:"#fff",fontSize:13,fontWeight:600,cursor:"pointer",opacity:status==="sending"?0.6:1}}>
+              {status==="sending"?"…":"Subscribe"}
+            </button>
+          </div>
+      }
+      {status==="error"&&<div style={{fontSize:12,color:"#e74c3c",width:"100%",textAlign:"right"}}>Something went wrong. Try again.</div>}
+    </div>
   );
 }
 
@@ -704,6 +834,7 @@ export default function App() {
   const [showLogin,setShowLogin] = useState(false);
   const [sidebarOpen,setSidebarOpen]   = useState(false);
   const [showContact,setShowContact]   = useState(false);
+  const [showSearch,setShowSearch]     = useState(false);
 
   useEffect(()=>{
     apiGetPosts().then(data=>{
@@ -753,6 +884,13 @@ export default function App() {
     window.addEventListener("popstate", onPop);
     return () => window.removeEventListener("popstate", onPop);
   },[posts]);
+
+  // Ctrl+K / Cmd+K to open search
+  useEffect(()=>{
+    const onKey = e => { if((e.ctrlKey||e.metaKey) && e.key==="k") { e.preventDefault(); setShowSearch(s=>!s); } };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  },[]);
 
   useEffect(()=>{
     if(view==="home") { updateOGTags({}); clearGTCookies(); }
@@ -841,6 +979,10 @@ export default function App() {
         </div>
         {/* Right side */}
         <div style={{display:"flex",alignItems:"center",gap:10}}>
+          <button onClick={()=>setShowSearch(true)} title="Search articles"
+            style={{display:"flex",alignItems:"center",justifyContent:"center",background:"none",border:`1px solid ${C.border}`,borderRadius:7,padding:"6px 8px",cursor:"pointer",color:C.textMuted,transition:"border-color .15s"}}>
+            <SearchIcon/>
+          </button>
           <button onClick={()=>setIsDark(d=>!d)} title={isDark?"Light mode":"Dark mode"}
             style={{display:"flex",alignItems:"center",justifyContent:"center",background:"none",border:`1px solid ${C.border}`,borderRadius:7,padding:"6px 8px",cursor:"pointer",color:C.textMuted,transition:"border-color .15s"}}>
             {isDark?<SunIcon/>:<MoonIcon/>}
@@ -864,9 +1006,9 @@ export default function App() {
       <LangCtx.Provider value={t}>
         {view==="read"&&(
           <div style={{minHeight:"100vh",width:"100%",background:C.offWhite,display:"flex",flexDirection:"column"}}>
-            {sidebar}{showLogin&&<LoginModal onLogin={handleLogin} onClose={()=>setShowLogin(false)}/>}{showContact&&<ContactModal onClose={()=>setShowContact(false)}/>}
+            {sidebar}{showLogin&&<LoginModal onLogin={handleLogin} onClose={()=>setShowLogin(false)}/>}{showContact&&<ContactModal onClose={()=>setShowContact(false)}/>}{showSearch&&<SearchModal posts={posts.filter(p=>isAdmin||p.status==="public")} onSelect={id=>navigateTo("read",id)} onClose={()=>setShowSearch(false)}/>}
             <Header/>
-            <div style={{flex:1,padding:"36px 48px"}}><Reader post={activePost} onBack={()=>navigateTo("home")} onEdit={()=>setView("edit")} isAdmin={isAdmin}/></div>
+            <div style={{flex:1,padding:"36px 48px"}}><Reader post={activePost} onBack={()=>navigateTo("home")} onEdit={()=>setView("edit")} isAdmin={isAdmin} allPosts={posts} onNavigate={id=>navigateTo("read",id)}/></div>
             <Footer/>
           </div>
         )}
@@ -878,7 +1020,7 @@ export default function App() {
         )}
         {view==="messages"&&isAdmin&&(
           <div style={{minHeight:"100vh",width:"100%",background:C.offWhite,display:"flex",flexDirection:"column"}}>
-            {sidebar}{showContact&&<ContactModal onClose={()=>setShowContact(false)}/>}
+            {sidebar}{showContact&&<ContactModal onClose={()=>setShowContact(false)}/>}{showSearch&&<SearchModal posts={posts.filter(p=>isAdmin||p.status==="public")} onSelect={id=>navigateTo("read",id)} onClose={()=>setShowSearch(false)}/>}
             <Header/>
             <main style={{flex:1,maxWidth:720,width:"100%",margin:"0 auto",boxSizing:"border-box",padding:"36px 24px"}}>
               <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:28}}>
@@ -928,7 +1070,7 @@ export default function App() {
         )}
         {view==="home"&&(
           <div style={{minHeight:"100vh",width:"100%",background:C.offWhite,fontFamily:"system-ui,sans-serif",display:"flex",flexDirection:"column"}}>
-            {sidebar}{showLogin&&<LoginModal onLogin={handleLogin} onClose={()=>setShowLogin(false)}/>}{showContact&&<ContactModal onClose={()=>setShowContact(false)}/>}
+            {sidebar}{showLogin&&<LoginModal onLogin={handleLogin} onClose={()=>setShowLogin(false)}/>}{showContact&&<ContactModal onClose={()=>setShowContact(false)}/>}{showSearch&&<SearchModal posts={posts.filter(p=>isAdmin||p.status==="public")} onSelect={id=>navigateTo("read",id)} onClose={()=>setShowSearch(false)}/>}
             <Header/>
             <main className="notranslate" style={{flex:1,width:"100%",boxSizing:"border-box",padding:"0 40px 34px"}}>
               {/* Tagline */}
@@ -974,11 +1116,13 @@ export default function App() {
                       </div>
 
                       {rest.length>0&&<>
+                        <div style={{marginBottom:28}}><NewsletterBar/></div>
                         <div style={{fontSize:10,fontWeight:700,letterSpacing:1.4,textTransform:"uppercase",color:C.textFaint,marginBottom:18,paddingBottom:10,borderBottom:`1px solid ${C.border}`}}>{t('latestArticles')}</div>
                         <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(340px,1fr))",gap:20}}>
                           {rest.map(p=><Card key={p.id} post={p} onClick={()=>navigateTo("read",p.id)} onDelete={handleDelete} onFeature={handleFeature} isAdmin={isAdmin}/>)}
                         </div>
                       </>}
+                      {rest.length===0&&<div style={{marginTop:28}}><NewsletterBar/></div>}
                     </>;
                   })()}
                 </div>}
