@@ -740,16 +740,16 @@ function NewsletterBar() {
     } catch { setStatus("error"); }
   };
   return (
-    <div className="notranslate" style={{background:C.textPrimary,borderRadius:12,padding:"28px 32px",display:"flex",flexWrap:"wrap",alignItems:"center",justifyContent:"space-between",gap:16}}>
+    <div className="notranslate" style={{background:"#1a1a1a",borderRadius:12,padding:"28px 32px",display:"flex",flexWrap:"wrap",alignItems:"center",justifyContent:"space-between",gap:16}}>
       <div>
-        <div style={{fontSize:16,fontWeight:700,color:C.offWhite,fontFamily:"Georgia,serif",marginBottom:4}}>Stay informed</div>
-        <div style={{fontSize:13,color:"rgba(255,255,255,.6)"}}>Get new articles delivered to your inbox.</div>
+        <div style={{fontSize:16,fontWeight:700,color:"#f5f5f5",fontFamily:"Georgia,serif",marginBottom:4}}>Stay informed</div>
+        <div style={{fontSize:13,color:"rgba(255,255,255,.55)"}}>Get new articles delivered to your inbox.</div>
       </div>
       {status==="done"
         ? <div style={{fontSize:13,fontWeight:600,color:"#27ae60"}}>Subscribed — thank you!</div>
         : <div style={{display:"flex",gap:8}}>
             <input type="email" value={email} onChange={e=>setEmail(e.target.value)} onKeyDown={e=>e.key==="Enter"&&submit()} placeholder="your@email.com"
-              style={{padding:"9px 14px",borderRadius:8,border:"none",fontSize:13,width:220,outline:"none",background:"rgba(255,255,255,.12)",color:"#fff"}}/>
+              style={{padding:"9px 14px",borderRadius:8,border:`1px solid rgba(255,255,255,.15)`,fontSize:13,width:220,outline:"none",background:"rgba(255,255,255,.08)",color:"#fff"}}/>
             <button onClick={submit} disabled={status==="sending"}
               style={{padding:"9px 18px",borderRadius:8,border:"none",background:C.accent,color:"#fff",fontSize:13,fontWeight:600,cursor:"pointer",opacity:status==="sending"?0.6:1}}>
               {status==="sending"?"…":"Subscribe"}
