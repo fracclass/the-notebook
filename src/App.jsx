@@ -740,23 +740,23 @@ function NewsletterBar() {
     } catch { setStatus("error"); }
   };
   return (
-    <div className="notranslate" style={{background:"#1a1a1a",borderRadius:12,padding:"28px 32px",display:"flex",flexWrap:"wrap",alignItems:"center",justifyContent:"space-between",gap:16}}>
-      <div>
+    <div className="notranslate" style={{background:"#1a1a1a",borderRadius:12,padding:"24px 24px",boxSizing:"border-box"}}>
+      <div style={{marginBottom:14}}>
         <div style={{fontSize:16,fontWeight:700,color:"#f5f5f5",fontFamily:"Georgia,serif",marginBottom:4}}>Stay informed</div>
         <div style={{fontSize:13,color:"rgba(255,255,255,.55)"}}>Get new articles delivered to your inbox.</div>
       </div>
       {status==="done"
         ? <div style={{fontSize:13,fontWeight:600,color:"#27ae60"}}>Subscribed — thank you!</div>
-        : <div style={{display:"flex",gap:8}}>
+        : <div style={{display:"flex",gap:8,width:"100%"}}>
             <input type="email" value={email} onChange={e=>setEmail(e.target.value)} onKeyDown={e=>e.key==="Enter"&&submit()} placeholder="your@email.com"
-              style={{padding:"9px 14px",borderRadius:8,border:`1px solid rgba(255,255,255,.15)`,fontSize:13,width:220,outline:"none",background:"rgba(255,255,255,.08)",color:"#fff"}}/>
+              style={{padding:"9px 14px",borderRadius:8,border:`1px solid rgba(255,255,255,.15)`,fontSize:13,flex:1,minWidth:0,outline:"none",background:"rgba(255,255,255,.08)",color:"#fff",boxSizing:"border-box"}}/>
             <button onClick={submit} disabled={status==="sending"}
-              style={{padding:"9px 18px",borderRadius:8,border:"none",background:C.accent,color:"#fff",fontSize:13,fontWeight:600,cursor:"pointer",opacity:status==="sending"?0.6:1}}>
+              style={{padding:"9px 18px",borderRadius:8,border:"none",background:C.accent,color:"#fff",fontSize:13,fontWeight:600,cursor:"pointer",opacity:status==="sending"?0.6:1,flexShrink:0}}>
               {status==="sending"?"…":"Subscribe"}
             </button>
           </div>
       }
-      {status==="error"&&<div style={{fontSize:12,color:"#e74c3c",width:"100%",textAlign:"right"}}>Something went wrong. Try again.</div>}
+      {status==="error"&&<div style={{fontSize:12,color:"#e74c3c",marginTop:8}}>Something went wrong. Try again.</div>}
     </div>
   );
 }
