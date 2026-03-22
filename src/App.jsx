@@ -36,7 +36,7 @@ const MailIcon    = () => <svg width="15" height="15" viewBox="0 0 24 24" fill="
 const InfoIcon    = () => <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>;
 const XIcon       = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>;
 const HamburgerIcon = ({color}) => <svg width="22" height="16" viewBox="0 0 22 16" fill="none"><line x1="0" y1="1" x2="22" y2="1" stroke={color} strokeWidth="2" strokeLinecap="round"/><line x1="0" y1="8" x2="22" y2="8" stroke={color} strokeWidth="2" strokeLinecap="round"/><line x1="0" y1="15" x2="22" y2="15" stroke={color} strokeWidth="2" strokeLinecap="round"/></svg>;
-const LangIcon    = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>;
+
 const MoonIcon    = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>;
 const StarIcon    = ({filled}) => <svg width="14" height="14" viewBox="0 0 24 24" fill={filled?"currentColor":"none"} stroke="currentColor" strokeWidth="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>;
 const SunIcon     = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>;
@@ -493,39 +493,13 @@ function Editor({ post, onSave, onBack }) {
   );
 }
 
-const TRANSLATE_LANGS = [{code:"fr",label:"Français"},{code:"es",label:"Español"},{code:"de",label:"Deutsch"}];
-const clearGTCookies = () => {
-  const expired = '; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
-  document.cookie = 'googtrans=' + expired;
-  document.cookie = 'googtrans=' + expired + ' domain=.' + window.location.hostname;
-  document.cookie = 'googtrans=' + expired + ' domain=' + window.location.hostname;
-};
-const applyGoogleTranslate = (code, attempt = 0) => {
-  if (code === 'en') clearGTCookies();
-  const select = document.querySelector('.goog-te-combo');
-  if (select) {
-    select.value = code === 'en' ? '' : code;
-    select.dispatchEvent(new Event('change'));
-    // Double-fire: GT sometimes needs a second nudge
-    setTimeout(() => {
-      const s2 = document.querySelector('.goog-te-combo');
-      if (s2) { s2.value = code === 'en' ? '' : code; s2.dispatchEvent(new Event('change')); }
-    }, 350);
-  } else if (attempt < 10) {
-    setTimeout(() => applyGoogleTranslate(code, attempt + 1), 250);
-  }
-};
 
 // ── Reader ────────────────────────────────────────────────────────────────────
 function Reader({ post, onEdit, onBack, isAdmin, allPosts, onNavigate }) {
   const C = useContext(ThemeCtx);
   const t = useContext(LangCtx);
-  const [txOpen, setTxOpen] = useState(false);
-  const [txLang, setTxLang] = useState(null);
   const [copied, setCopied] = useState(false);
   const progressRef = useRef(null);
-  const txRef = useRef(null);
-  const bodyRef = useRef(null);
   const imgMatch=post.body?.match(/<img[^>]+src="([^"]+)"/); const thumb=imgMatch?.[1];
   useEffect(()=>{ updateOGTags({title:post.title,description:post.summary,image:thumb}); return()=>updateOGTags({}); },[post.title,post.summary,thumb]);
   // Reading progress bar — use ref to avoid re-renders (which would reset GT translations)
@@ -538,49 +512,6 @@ function Reader({ post, onEdit, onBack, isAdmin, allPosts, onNavigate }) {
     window.addEventListener("scroll", onScroll);
     return () => window.removeEventListener("scroll", onScroll);
   },[]);
-  useEffect(()=>{
-    const handler = e => { if(txRef.current && !txRef.current.contains(e.target)) setTxOpen(false); };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  },[]);
-  // On mount: reset GT and force original body
-  useEffect(()=>{
-    const resetGT = () => {
-      clearGTCookies();
-      const select = document.querySelector('.goog-te-combo');
-      if (select && select.value !== '') {
-        select.value = '';
-        select.dispatchEvent(new Event('change'));
-      }
-    };
-    resetGT();
-    // GT can re-apply from cache — force original HTML back
-    const t1 = setTimeout(() => { resetGT(); if (bodyRef.current) bodyRef.current.innerHTML = post.body; }, 400);
-    const t2 = setTimeout(() => { resetGT(); if (bodyRef.current) bodyRef.current.innerHTML = post.body; }, 900);
-    return () => { clearTimeout(t1); clearTimeout(t2); };
-  },[]);
-
-  const handleBack = () => {
-    // Always fully reset GT before leaving
-    applyGoogleTranslate('en');
-    clearGTCookies();
-    setTxLang(null);
-    // Delay nav to let GT finish reverting
-    setTimeout(() => { clearGTCookies(); onBack(); }, 500);
-  };
-  const selectLang = (code) => { setTxLang(code); setTxOpen(false); applyGoogleTranslate(code); };
-  const resetLang  = () => {
-    setTxLang(null); setTxOpen(false);
-    // Restore original body directly — more reliable than asking GT to revert
-    clearGTCookies();
-    const select = document.querySelector('.goog-te-combo');
-    if (select) { select.value = ''; select.dispatchEvent(new Event('change')); }
-    // Force original HTML back after a tick (GT may fight back)
-    setTimeout(() => {
-      if (bodyRef.current) bodyRef.current.innerHTML = post.body;
-      clearGTCookies();
-    }, 100);
-  };
 
   return (
     <>
@@ -590,7 +521,7 @@ function Reader({ post, onEdit, onBack, isAdmin, allPosts, onNavigate }) {
     </div>
     <div style={{maxWidth:740,margin:"0 auto",padding:"32px 0 100px"}}>
       <div className="notranslate" style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:40}}>
-        <button onClick={handleBack} style={{display:"flex",alignItems:"center",gap:6,background:"none",border:`1px solid ${C.editorBorderStrong}`,borderRadius:8,padding:"8px 16px",cursor:"pointer",fontSize:13,color:C.textSecondary}}><BackIcon/> {t('back')}</button>
+        <button onClick={onBack} style={{display:"flex",alignItems:"center",gap:6,background:"none",border:`1px solid ${C.editorBorderStrong}`,borderRadius:8,padding:"8px 16px",cursor:"pointer",fontSize:13,color:C.textSecondary}}><BackIcon/> {t('back')}</button>
         <div style={{display:"flex",gap:8,alignItems:"center"}}>
           {/* Share button */}
           <button onClick={()=>{
@@ -613,27 +544,7 @@ function Reader({ post, onEdit, onBack, isAdmin, allPosts, onNavigate }) {
         <span>{post.author&&<span style={{fontWeight:600,color:C.textSecondary,marginRight:6}}>{t('by')} {post.author} · </span>}{fmt(post.createdAt,t('locale'))}{post.updatedAt!==post.createdAt&&<span> · {t('lastRevised')} {fmt(post.updatedAt,t('locale'))}</span>}</span>
         <span style={{background:C.readingTimeBg,padding:"3px 10px",borderRadius:8,fontSize:11,fontWeight:600,color:C.readingTimeText,flexShrink:0}}>{readingTime(post.body)} {t('minRead')}</span>
       </div>
-      {/* Translate — scoped to article body only */}
-      <div className="notranslate" style={{display:"flex",alignItems:"center",gap:10,marginBottom:20}}>
-        <div ref={txRef} style={{position:"relative"}}>
-          <button onClick={()=>setTxOpen(o=>!o)}
-            style={{display:"flex",alignItems:"center",gap:6,background:txLang?C.accentLight:"none",border:`1px solid ${txLang?C.accent:C.border}`,borderRadius:8,padding:"7px 13px",cursor:"pointer",fontSize:12,fontWeight:600,color:txLang?C.accent:C.textMuted,transition:"all .15s"}}>
-            <LangIcon/>{txLang?`Translated · ${txLang.toUpperCase()}`:"Translate article"}
-          </button>
-          {txOpen&&(
-            <div style={{position:"absolute",top:"calc(100% + 6px)",left:0,background:C.white,border:`1px solid ${C.border}`,borderRadius:10,boxShadow:"0 8px 28px rgba(0,0,0,.12)",minWidth:148,zIndex:200,overflow:"hidden"}}>
-              <button onClick={resetLang} style={{display:"flex",alignItems:"center",gap:8,width:"100%",padding:"9px 14px",background:"transparent",border:"none",borderBottom:`1px solid ${C.border}`,cursor:"pointer",fontSize:12,fontWeight:600,color:C.textMuted}}>✕ Reset to English</button>
-              {TRANSLATE_LANGS.map(l=>(
-                <button key={l.code} onClick={()=>selectLang(l.code)}
-                  style={{display:"flex",alignItems:"center",gap:10,width:"100%",padding:"9px 14px",background:txLang===l.code?C.accentLight:"transparent",border:"none",cursor:"pointer",fontSize:13,fontWeight:txLang===l.code?700:500,color:txLang===l.code?C.accent:C.textSecondary,textAlign:"left",transition:"background .1s"}}>
-                  <span style={{fontSize:11,fontWeight:700,opacity:0.55,minWidth:22}}>{l.code.toUpperCase()}</span>{l.label}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-      <div ref={bodyRef} className="article-body" style={{fontSize:17,lineHeight:1.85,color:C.bodyText,fontFamily:"Georgia,serif"}} dangerouslySetInnerHTML={{__html:post.body}}/>
+      <div className="article-body" style={{fontSize:17,lineHeight:1.85,color:C.bodyText,fontFamily:"Georgia,serif"}} dangerouslySetInnerHTML={{__html:post.body}}/>
       {post.sources?.length>0&&(
         <div className="notranslate" style={{marginTop:52,paddingTop:26,borderTop:`1px solid ${C.editorBorder}`}}>
           <div style={{fontSize:10,fontWeight:700,letterSpacing:1.2,textTransform:"uppercase",color:C.textFaint,marginBottom:16}}>{t('labelSources')}</div>
@@ -799,12 +710,6 @@ function Footer() {
 }
 
 // ── App (root) ────────────────────────────────────────────────────────────────
-const LANG_OPTIONS = [
-  { code:"en", flag:"🇬🇧", label:"English" },
-  { code:"fr", flag:"🇫🇷", label:"Français" },
-  { code:"es", flag:"🇪🇸", label:"Español" },
-  { code:"de", flag:"🇩🇪", label:"Deutsch" },
-];
 
 export default function App() {
   // ── Theme state ──
@@ -911,7 +816,7 @@ export default function App() {
   },[]);
 
   useEffect(()=>{
-    if(view==="home") { updateOGTags({}); clearGTCookies(); }
+    if(view==="home") { updateOGTags({}); }
   },[view]);
 
 

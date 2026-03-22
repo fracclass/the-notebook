@@ -12,33 +12,10 @@
         color: #ede8e2 !important;
         background-color: transparent !important;
       }
-      /* Hide Google Translate toolbar completely */
-      .goog-te-banner-frame, .skiptranslate { display: none !important; }
-      body { top: 0 !important; }
-      .goog-tooltip, .goog-tooltip:hover { display: none !important; }
-      .goog-text-highlight { background: none !important; box-shadow: none !important; }
     </style>
   </head>
   <body style="margin:0;padding:0;width:100%;">
-    <div id="google_translate_element" style="display:none"></div>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
-    <script>
-      // Remove legacy language preference (UI now always English)
-      localStorage.removeItem('nb_lang');
-      // Always start in English — wipe any lingering translation cookie before GT loads
-      document.cookie = 'googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
-      document.cookie = 'googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=.' + window.location.hostname;
-    </script>
-    <script>
-      function googleTranslateElementInit() {
-        new google.translate.TranslateElement({
-          pageLanguage: 'en',
-          includedLanguages: 'fr,es,de',
-          autoDisplay: false
-        }, 'google_translate_element');
-      }
-    </script>
-    <script src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
   </body>
 </html>
