@@ -9,6 +9,7 @@ const REGIONS = ["Africa","Americas","Asia-Pacific","Europe","Middle East","Glob
 
 const now = () => new Date().toISOString();
 const fmt = (iso, locale="en-US") => new Date(iso).toLocaleDateString(locale,{year:"numeric",month:"long",day:"numeric"});
+const slugify = (str) => (str||"").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"").slice(0,80);
 const readingTime = (html) => {
   const text = (html||"").replace(/<[^>]+>/g,"").replace(/&\w+;/g," ");
   const words = text.trim().split(/\s+/).filter(Boolean).length;
@@ -39,6 +40,7 @@ const LangIcon    = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="
 const MoonIcon    = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>;
 const StarIcon    = ({filled}) => <svg width="14" height="14" viewBox="0 0 24 24" fill={filled?"currentColor":"none"} stroke="currentColor" strokeWidth="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>;
 const SunIcon     = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>;
+const ShareIcon   = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>;
 
 // ── API ────────────────────────────────────────────────────────────────────────
 async function apiGetPosts() {
@@ -296,6 +298,7 @@ function MultiPicker({ label, options, colors, selected, onChange }) {
 function RichEditor({ value, onChange }) {
   const C = useContext(ThemeCtx);
   const ref=useRef(null); const imgInput=useRef(null);
+  const [selImg, setSelImg] = useState(null);
   useEffect(()=>{ if(ref.current) ref.current.innerHTML=value||"<p><br></p>"; },[]);
   const exec=(cmd,val)=>{ ref.current?.focus(); document.execCommand(cmd,false,val); onChange(ref.current?.innerHTML||""); };
   const insertImage=(e)=>{
@@ -303,6 +306,14 @@ function RichEditor({ value, onChange }) {
     const reader=new FileReader();
     reader.onload=(ev)=>{ ref.current?.focus(); document.execCommand("insertHTML",false,`<img src="${ev.target.result}" style="max-width:100%;height:auto;border-radius:8px;margin:12px 0;display:block;"/>`); onChange(ref.current?.innerHTML||""); };
     reader.readAsDataURL(file); e.target.value="";
+  };
+  // Click on image in editor to select it; click elsewhere to deselect
+  const handleEditorClick = (e) => {
+    if(e.target.tagName==="IMG") { setSelImg(e.target); e.target.style.outline="3px solid #7a1e1e"; e.target.style.outlineOffset="2px"; }
+    else if(selImg) { selImg.style.outline=""; selImg.style.outlineOffset=""; setSelImg(null); }
+  };
+  const deleteSelectedImage = () => {
+    if(selImg && ref.current?.contains(selImg)) { selImg.remove(); onChange(ref.current?.innerHTML||""); setSelImg(null); }
   };
   return (
     <div style={{border:`1px solid ${C.editorBorderStrong}`,borderRadius:10,overflow:"hidden",background:C.white}}>
@@ -330,9 +341,17 @@ function RichEditor({ value, onChange }) {
         <div style={{width:1,background:C.toolbarBtnBorder,height:18,margin:"0 4px"}}/>
         <button onMouseDown={e=>{e.preventDefault();imgInput.current?.click();}} style={{display:"flex",alignItems:"center",gap:4,background:C.toolbarBtn,border:`1px solid ${C.toolbarBtnBorder}`,borderRadius:5,padding:"2px 9px",cursor:"pointer",fontSize:12,color:C.toolbarBtnText}}><ImageIcon/> Image</button>
         <input ref={imgInput} type="file" accept="image/*" onChange={insertImage} style={{display:"none"}}/>
+        {selImg&&<>
+          <div style={{width:1,background:C.toolbarBtnBorder,height:18,margin:"0 4px"}}/>
+          <button onMouseDown={e=>{e.preventDefault();deleteSelectedImage();}} style={{display:"flex",alignItems:"center",gap:4,background:"#c0392b",border:"none",borderRadius:5,padding:"3px 10px",cursor:"pointer",fontSize:12,color:"#fff",fontWeight:600}}><TrashIcon/> Delete Image</button>
+        </>}
       </div>
       <div ref={ref} contentEditable suppressContentEditableWarning onInput={e=>onChange(e.currentTarget.innerHTML)}
-        onKeyDown={e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();document.execCommand("insertParagraph");}}}
+        onClick={handleEditorClick}
+        onKeyDown={e=>{
+          if(selImg && (e.key==="Delete"||e.key==="Backspace")){e.preventDefault();deleteSelectedImage();return;}
+          if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();document.execCommand("insertParagraph");}
+        }}
         style={{minHeight:"calc(100vh - 420px)",padding:"28px 32px",fontSize:17,lineHeight:1.8,color:C.bodyText,outline:"none",fontFamily:"Georgia,serif",direction:"ltr",textAlign:"left",unicodeBidi:"embed",writingMode:"horizontal-tb",WebkitWritingMode:"horizontal-tb",wordBreak:"break-word"}}/>
     </div>
   );
@@ -500,9 +519,20 @@ function Reader({ post, onEdit, onBack, isAdmin }) {
   const t = useContext(LangCtx);
   const [txOpen, setTxOpen] = useState(false);
   const [txLang, setTxLang] = useState(null);
+  const [copied, setCopied] = useState(false);
+  const [progress, setProgress] = useState(0);
   const txRef = useRef(null);
   const imgMatch=post.body?.match(/<img[^>]+src="([^"]+)"/); const thumb=imgMatch?.[1];
   useEffect(()=>{ updateOGTags({title:post.title,description:post.summary,image:thumb}); return()=>updateOGTags({}); },[post.title,post.summary,thumb]);
+  // Reading progress bar
+  useEffect(()=>{
+    const onScroll = () => {
+      const h = document.documentElement.scrollHeight - window.innerHeight;
+      setProgress(h > 0 ? Math.min(100, (window.scrollY / h) * 100) : 0);
+    };
+    window.addEventListener("scroll", onScroll);
+    return () => window.removeEventListener("scroll", onScroll);
+  },[]);
   useEffect(()=>{
     const handler = e => { if(txRef.current && !txRef.current.contains(e.target)) setTxOpen(false); };
     document.addEventListener('mousedown', handler);
@@ -534,10 +564,22 @@ function Reader({ post, onEdit, onBack, isAdmin }) {
   const resetLang  = () => { setTxLang(null); setTxOpen(false); applyGoogleTranslate('en'); };
 
   return (
+    <>
+    {/* Reading progress bar */}
+    <div style={{position:"fixed",top:62,left:0,width:"100%",height:3,zIndex:99,background:"transparent"}}>
+      <div style={{height:"100%",width:`${progress}%`,background:C.accent,transition:"width .1s linear"}}/>
+    </div>
     <div style={{maxWidth:740,margin:"0 auto",padding:"32px 0 100px"}}>
       <div className="notranslate" style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:40}}>
         <button onClick={handleBack} style={{display:"flex",alignItems:"center",gap:6,background:"none",border:`1px solid ${C.editorBorderStrong}`,borderRadius:8,padding:"8px 16px",cursor:"pointer",fontSize:13,color:C.textSecondary}}><BackIcon/> {t('back')}</button>
         <div style={{display:"flex",gap:8,alignItems:"center"}}>
+          {/* Share button */}
+          <button onClick={()=>{
+            const url = `${window.location.origin}/article/${slugify(post.title)}`;
+            navigator.clipboard.writeText(url).then(()=>{setCopied(true);setTimeout(()=>setCopied(false),2000);});
+          }} style={{display:"flex",alignItems:"center",gap:6,background:"none",border:`1px solid ${C.border}`,borderRadius:8,padding:"8px 14px",cursor:"pointer",fontSize:12,fontWeight:600,color:copied?"#27ae60":C.textMuted,transition:"all .15s"}}>
+            <ShareIcon/>{copied?"Copied!":"Share"}
+          </button>
           {/* Translate button */}
           <div ref={txRef} style={{position:"relative"}}>
             <button onClick={()=>setTxOpen(o=>!o)}
@@ -583,6 +625,7 @@ function Reader({ post, onEdit, onBack, isAdmin }) {
         </div>
       )}
     </div>
+    </>
   );
 }
 
@@ -639,10 +682,19 @@ export default function App() {
   };
   useEffect(() => { document.body.classList.toggle('dark-mode', isDark); }, [isDark]);
 
+  // ── URL routing helper ──
+  const parseRoute = () => {
+    const path = window.location.pathname;
+    const m = path.match(/^\/article\/(.+)$/);
+    return m ? { view: "read", slug: decodeURIComponent(m[1]) } : { view: "home", slug: null };
+  };
+
   // ── App state ──
   const [posts,setPosts]     = useState([]);
   const [loading,setLoading] = useState(true);
-  const [view,setView]       = useState("home");
+  const initRoute = parseRoute();
+  const [view,setView]       = useState(initRoute.view);
+  const [pendingSlug,setPendingSlug] = useState(initRoute.slug);
   const [activeId,setActiveId] = useState(null);
   const [filterTopic,setFilterTopic]   = useState("All");
   const [filterRegion,setFilterRegion] = useState("All");
@@ -654,8 +706,53 @@ export default function App() {
   const [showContact,setShowContact]   = useState(false);
 
   useEffect(()=>{
-    apiGetPosts().then(data=>{ setPosts(data||SAMPLE); setLoading(false); });
+    apiGetPosts().then(data=>{
+      const allPosts = data||SAMPLE;
+      setPosts(allPosts);
+      // Resolve pending slug from URL
+      if(pendingSlug) {
+        const match = allPosts.find(p => slugify(p.title) === pendingSlug);
+        if(match) { setActiveId(match.id); setView("read"); }
+        else { setView("home"); window.history.replaceState(null,"","/"); }
+        setPendingSlug(null);
+      }
+      setLoading(false);
+    });
   },[]);
+
+  // ── Navigation helper (pushes URL) ──
+  const navigateTo = (newView, postOrId) => {
+    if(newView === "read" && postOrId) {
+      const p = typeof postOrId === "string" ? posts.find(x=>x.id===postOrId) : postOrId;
+      if(p) {
+        setActiveId(p.id); setView("read");
+        window.history.pushState({view:"read",id:p.id},"",`/article/${slugify(p.title)}`);
+        return;
+      }
+    }
+    if(newView === "home") {
+      setView("home"); setActiveId(null);
+      window.history.pushState({view:"home"},"","/");
+      return;
+    }
+    setView(newView);
+  };
+
+  // ── Handle browser back/forward ──
+  useEffect(()=>{
+    const onPop = () => {
+      const route = parseRoute();
+      if(route.slug) {
+        const match = posts.find(p => slugify(p.title) === route.slug);
+        if(match) { setActiveId(match.id); setView("read"); }
+        else { setView("home"); }
+      } else {
+        setView("home"); setActiveId(null);
+      }
+    };
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  },[posts]);
 
   useEffect(()=>{
     if(view==="home") { updateOGTags({}); clearGTCookies(); }
@@ -738,7 +835,7 @@ export default function App() {
         <div style={{display:"flex",alignItems:"center",gap:18}}>
           <button onClick={()=>setSidebarOpen(true)} style={{background:"none",border:"none",cursor:"pointer",padding:"6px 4px",display:"flex",alignItems:"center",lineHeight:0}}><HamburgerIcon color={C.accent}/></button>
           <div style={{display:"flex",alignItems:"baseline",gap:12}}>
-            <span onClick={()=>setView("home")} style={{fontSize:21,fontWeight:800,fontFamily:"Georgia,serif",color:C.textPrimary,letterSpacing:"-0.5px",cursor:"pointer"}}>{t('siteTitle')}</span>
+            <span onClick={()=>navigateTo("home")} style={{fontSize:21,fontWeight:800,fontFamily:"Georgia,serif",color:C.textPrimary,letterSpacing:"-0.5px",cursor:"pointer"}}>{t('siteTitle')}</span>
             <span style={{fontSize:12,color:C.textFaint}}>{isAdmin?`${pub} public · ${posts.length-pub} private`:`${pub} article${pub!==1?"s":""}`}</span>
           </div>
         </div>
@@ -769,14 +866,14 @@ export default function App() {
           <div style={{minHeight:"100vh",width:"100%",background:C.offWhite,display:"flex",flexDirection:"column"}}>
             {sidebar}{showLogin&&<LoginModal onLogin={handleLogin} onClose={()=>setShowLogin(false)}/>}{showContact&&<ContactModal onClose={()=>setShowContact(false)}/>}
             <Header/>
-            <div style={{flex:1,padding:"36px 48px"}}><Reader post={activePost} onBack={()=>setView("home")} onEdit={()=>setView("edit")} isAdmin={isAdmin}/></div>
+            <div style={{flex:1,padding:"36px 48px"}}><Reader post={activePost} onBack={()=>navigateTo("home")} onEdit={()=>setView("edit")} isAdmin={isAdmin}/></div>
             <Footer/>
           </div>
         )}
         {(view==="edit"||view==="new")&&(
           <div style={{minHeight:"100vh",width:"100%",background:C.offWhite}}>
             {sidebar}<Header/>
-            <Editor post={view==="new"?{}:activePost} onSave={p=>{handleSave(p);setActiveId(p.id);setView("read");}} onBack={()=>setView(activeId?"read":"home")}/>
+            <Editor post={view==="new"?{}:activePost} onSave={p=>{handleSave(p);navigateTo("read",p);}} onBack={()=>activeId?navigateTo("read",activeId):navigateTo("home")}/>
           </div>
         )}
         {view==="messages"&&isAdmin&&(
@@ -854,7 +951,7 @@ export default function App() {
                     const rest = visible.slice(1);
                     const heroImg = hero.body?.match(/<img[^>]+src="([^"]+)"/)?.[1];
                     return <>
-                      <div onClick={()=>{setActiveId(hero.id);setView("read");}}
+                      <div onClick={()=>navigateTo("read",hero.id)}
                         style={{cursor:"pointer",marginBottom:36,background:C.cardBg,borderRadius:16,border:`1px solid ${C.border}`,overflow:"hidden",transition:"all .15s",boxShadow:"0 1px 4px rgba(0,0,0,.04)"}}
                         onMouseEnter={e=>{e.currentTarget.style.boxShadow="0 12px 36px rgba(0,0,0,.10)";e.currentTarget.style.transform="translateY(-2px)";}}
                         onMouseLeave={e=>{e.currentTarget.style.boxShadow="0 1px 4px rgba(0,0,0,.04)";e.currentTarget.style.transform="none";}}>
@@ -879,7 +976,7 @@ export default function App() {
                       {rest.length>0&&<>
                         <div style={{fontSize:10,fontWeight:700,letterSpacing:1.4,textTransform:"uppercase",color:C.textFaint,marginBottom:18,paddingBottom:10,borderBottom:`1px solid ${C.border}`}}>{t('latestArticles')}</div>
                         <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(340px,1fr))",gap:20}}>
-                          {rest.map(p=><Card key={p.id} post={p} onClick={()=>{setActiveId(p.id);setView("read");}} onDelete={handleDelete} onFeature={handleFeature} isAdmin={isAdmin}/>)}
+                          {rest.map(p=><Card key={p.id} post={p} onClick={()=>navigateTo("read",p.id)} onDelete={handleDelete} onFeature={handleFeature} isAdmin={isAdmin}/>)}
                         </div>
                       </>}
                     </>;
