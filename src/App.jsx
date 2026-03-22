@@ -523,15 +523,16 @@ function Reader({ post, onEdit, onBack, isAdmin, allPosts, onNavigate }) {
   const [txOpen, setTxOpen] = useState(false);
   const [txLang, setTxLang] = useState(null);
   const [copied, setCopied] = useState(false);
-  const [progress, setProgress] = useState(0);
+  const progressRef = useRef(null);
   const txRef = useRef(null);
   const imgMatch=post.body?.match(/<img[^>]+src="([^"]+)"/); const thumb=imgMatch?.[1];
   useEffect(()=>{ updateOGTags({title:post.title,description:post.summary,image:thumb}); return()=>updateOGTags({}); },[post.title,post.summary,thumb]);
-  // Reading progress bar
+  // Reading progress bar — use ref to avoid re-renders (which would reset GT translations)
   useEffect(()=>{
     const onScroll = () => {
       const h = document.documentElement.scrollHeight - window.innerHeight;
-      setProgress(h > 0 ? Math.min(100, (window.scrollY / h) * 100) : 0);
+      const pct = h > 0 ? Math.min(100, (window.scrollY / h) * 100) : 0;
+      if (progressRef.current) progressRef.current.style.width = `${pct}%`;
     };
     window.addEventListener("scroll", onScroll);
     return () => window.removeEventListener("scroll", onScroll);
@@ -570,7 +571,7 @@ function Reader({ post, onEdit, onBack, isAdmin, allPosts, onNavigate }) {
     <>
     {/* Reading progress bar */}
     <div style={{position:"fixed",top:62,left:0,width:"100%",height:3,zIndex:99,background:"transparent"}}>
-      <div style={{height:"100%",width:`${progress}%`,background:C.accent,transition:"width .1s linear"}}/>
+      <div ref={progressRef} style={{height:"100%",width:"0%",background:C.accent,transition:"width .1s linear"}}/>
     </div>
     <div style={{maxWidth:740,margin:"0 auto",padding:"32px 0 100px"}}>
       <div className="notranslate" style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:40}}>
