@@ -542,27 +542,30 @@ function Reader({ post, onEdit, onBack, isAdmin, allPosts, onNavigate }) {
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   },[]);
-  // On mount: clear cookies AND reset widget if stuck on a previous language
+  // On mount: aggressively reset GT — clear cookies, reset widget, and retry after delay
   useEffect(()=>{
-    clearGTCookies();
-    const select = document.querySelector('.goog-te-combo');
-    if (select && select.value !== '') {
-      select.value = '';
-      select.dispatchEvent(new Event('change'));
-    }
+    const resetGT = () => {
+      clearGTCookies();
+      const select = document.querySelector('.goog-te-combo');
+      if (select && select.value !== '') {
+        select.value = '';
+        select.dispatchEvent(new Event('change'));
+      }
+    };
+    resetGT();
+    // GT can re-apply from cache after initial clear, so hit it again
+    const t1 = setTimeout(resetGT, 300);
+    const t2 = setTimeout(resetGT, 800);
+    return () => { clearTimeout(t1); clearTimeout(t2); };
   },[]);
 
   const handleBack = () => {
-    if (txLang) {
-      // Was translating — reset GT fully, clear cookies, then navigate
-      applyGoogleTranslate('en');
-      setTxLang(null);
-      setTimeout(() => { clearGTCookies(); onBack(); }, 700);
-    } else {
-      // No translation active — still wipe cookies before leaving
-      clearGTCookies();
-      onBack();
-    }
+    // Always fully reset GT before leaving
+    applyGoogleTranslate('en');
+    clearGTCookies();
+    setTxLang(null);
+    // Delay nav to let GT finish reverting
+    setTimeout(() => { clearGTCookies(); onBack(); }, 500);
   };
   const selectLang = (code) => { setTxLang(code); setTxOpen(false); applyGoogleTranslate(code); };
   const resetLang  = () => { setTxLang(null); setTxOpen(false); applyGoogleTranslate('en'); };
@@ -607,7 +610,7 @@ function Reader({ post, onEdit, onBack, isAdmin, allPosts, onNavigate }) {
           </button>
           {txOpen&&(
             <div style={{position:"absolute",top:"calc(100% + 6px)",left:0,background:C.white,border:`1px solid ${C.border}`,borderRadius:10,boxShadow:"0 8px 28px rgba(0,0,0,.12)",minWidth:148,zIndex:200,overflow:"hidden"}}>
-              {txLang&&<button onClick={resetLang} style={{display:"flex",alignItems:"center",gap:8,width:"100%",padding:"9px 14px",background:"transparent",border:"none",borderBottom:`1px solid ${C.border}`,cursor:"pointer",fontSize:12,fontWeight:600,color:C.textMuted}}>✕ Reset to English</button>}
+              <button onClick={resetLang} style={{display:"flex",alignItems:"center",gap:8,width:"100%",padding:"9px 14px",background:"transparent",border:"none",borderBottom:`1px solid ${C.border}`,cursor:"pointer",fontSize:12,fontWeight:600,color:C.textMuted}}>✕ Reset to English</button>
               {TRANSLATE_LANGS.map(l=>(
                 <button key={l.code} onClick={()=>selectLang(l.code)}
                   style={{display:"flex",alignItems:"center",gap:10,width:"100%",padding:"9px 14px",background:txLang===l.code?C.accentLight:"transparent",border:"none",cursor:"pointer",fontSize:13,fontWeight:txLang===l.code?700:500,color:txLang===l.code?C.accent:C.textSecondary,textAlign:"left",transition:"background .1s"}}>
