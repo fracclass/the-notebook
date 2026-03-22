@@ -525,6 +525,7 @@ function Reader({ post, onEdit, onBack, isAdmin, allPosts, onNavigate }) {
   const [copied, setCopied] = useState(false);
   const progressRef = useRef(null);
   const txRef = useRef(null);
+  const bodyRef = useRef(null);
   const imgMatch=post.body?.match(/<img[^>]+src="([^"]+)"/); const thumb=imgMatch?.[1];
   useEffect(()=>{ updateOGTags({title:post.title,description:post.summary,image:thumb}); return()=>updateOGTags({}); },[post.title,post.summary,thumb]);
   // Reading progress bar — use ref to avoid re-renders (which would reset GT translations)
@@ -542,7 +543,7 @@ function Reader({ post, onEdit, onBack, isAdmin, allPosts, onNavigate }) {
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   },[]);
-  // On mount: aggressively reset GT — clear cookies, reset widget, and retry after delay
+  // On mount: reset GT and force original body
   useEffect(()=>{
     const resetGT = () => {
       clearGTCookies();
@@ -553,9 +554,9 @@ function Reader({ post, onEdit, onBack, isAdmin, allPosts, onNavigate }) {
       }
     };
     resetGT();
-    // GT can re-apply from cache after initial clear, so hit it again
-    const t1 = setTimeout(resetGT, 300);
-    const t2 = setTimeout(resetGT, 800);
+    // GT can re-apply from cache — force original HTML back
+    const t1 = setTimeout(() => { resetGT(); if (bodyRef.current) bodyRef.current.innerHTML = post.body; }, 400);
+    const t2 = setTimeout(() => { resetGT(); if (bodyRef.current) bodyRef.current.innerHTML = post.body; }, 900);
     return () => { clearTimeout(t1); clearTimeout(t2); };
   },[]);
 
@@ -568,7 +569,18 @@ function Reader({ post, onEdit, onBack, isAdmin, allPosts, onNavigate }) {
     setTimeout(() => { clearGTCookies(); onBack(); }, 500);
   };
   const selectLang = (code) => { setTxLang(code); setTxOpen(false); applyGoogleTranslate(code); };
-  const resetLang  = () => { setTxLang(null); setTxOpen(false); applyGoogleTranslate('en'); };
+  const resetLang  = () => {
+    setTxLang(null); setTxOpen(false);
+    // Restore original body directly — more reliable than asking GT to revert
+    clearGTCookies();
+    const select = document.querySelector('.goog-te-combo');
+    if (select) { select.value = ''; select.dispatchEvent(new Event('change')); }
+    // Force original HTML back after a tick (GT may fight back)
+    setTimeout(() => {
+      if (bodyRef.current) bodyRef.current.innerHTML = post.body;
+      clearGTCookies();
+    }, 100);
+  };
 
   return (
     <>
@@ -621,7 +633,7 @@ function Reader({ post, onEdit, onBack, isAdmin, allPosts, onNavigate }) {
           )}
         </div>
       </div>
-      <div className="article-body" style={{fontSize:17,lineHeight:1.85,color:C.bodyText,fontFamily:"Georgia,serif"}} dangerouslySetInnerHTML={{__html:post.body}}/>
+      <div ref={bodyRef} className="article-body" style={{fontSize:17,lineHeight:1.85,color:C.bodyText,fontFamily:"Georgia,serif"}} dangerouslySetInnerHTML={{__html:post.body}}/>
       {post.sources?.length>0&&(
         <div className="notranslate" style={{marginTop:52,paddingTop:26,borderTop:`1px solid ${C.editorBorder}`}}>
           <div style={{fontSize:10,fontWeight:700,letterSpacing:1.2,textTransform:"uppercase",color:C.textFaint,marginBottom:16}}>{t('labelSources')}</div>
